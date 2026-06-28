@@ -478,6 +478,7 @@ export const WorkspaceApp = ({
   const [isOnline, setIsOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   const [isDesktop, setIsDesktop] = useState(isDesktopViewport);
   const [isSyncingQueuedChanges, setIsSyncingQueuedChanges] = useState(false);
+  const [isStandaloneRuntime] = useState(isStandaloneApp);
   const [pullToRefreshDistance, setPullToRefreshDistance] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const isPullRefreshingRef = useRef(false);
@@ -668,7 +669,7 @@ export const WorkspaceApp = ({
   }, [isPullRefreshing]);
 
   useEffect(() => {
-    if (!mobilePullToRefreshActive || !isStandaloneApp()) {
+    if (!mobilePullToRefreshActive) {
       setPullToRefreshDistance(0);
       return;
     }
@@ -742,7 +743,13 @@ export const WorkspaceApp = ({
 
       if (shouldRefresh) {
         setPullToRefreshDistance(PULL_TO_REFRESH_TRIGGER_PX);
-        void refreshLatestMemos();
+        if (isStandaloneRuntime) {
+          void refreshLatestMemos();
+          return;
+        }
+
+        setIsPullRefreshing(true);
+        window.location.reload();
       }
     };
 
@@ -757,7 +764,7 @@ export const WorkspaceApp = ({
       document.removeEventListener("touchend", handleTouchEnd);
       document.removeEventListener("touchcancel", reset);
     };
-  }, [mobilePullToRefreshActive, refreshLatestMemos]);
+  }, [isStandaloneRuntime, mobilePullToRefreshActive, refreshLatestMemos]);
 
   useEffect(() => {
     const updateOnlineState = () => {
@@ -1658,7 +1665,17 @@ export const WorkspaceApp = ({
     rightView === "settings" ? "正在加载个人中心" : rightView === "assets" ? "正在加载资源库" : "正在加载编辑器";
   const pullToRefreshVisible = pullToRefreshDistance > 0 || isPullRefreshing;
   const pullToRefreshReady = pullToRefreshDistance >= PULL_TO_REFRESH_TRIGGER_PX;
-  const pullToRefreshLabel = isPullRefreshing ? "正在拉取最新笔记" : pullToRefreshReady ? "松开刷新" : "下拉刷新";
+  const pullToRefreshLabel = isPullRefreshing
+    ? isStandaloneRuntime
+      ? "正在拉取最新笔记"
+      : "正在刷新网页"
+    : pullToRefreshReady
+      ? isStandaloneRuntime
+        ? "松开刷新"
+        : "松开刷新网页"
+      : isStandaloneRuntime
+        ? "下拉刷新"
+        : "下拉刷新网页";
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-emerald-50 text-slate-950">
