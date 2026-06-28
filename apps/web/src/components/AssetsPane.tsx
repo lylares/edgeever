@@ -81,16 +81,16 @@ export const AssetsPane = ({ onClose }: AssetsPaneProps) => {
               {resources.map((resource) => (
                 <a
                   key={resource.id}
-                  className="group relative flex min-h-16 items-center gap-3.5 rounded-xl border border-slate-200/80 bg-white p-3.5 text-left transition-all duration-200 hover:border-[#627f58]/35 hover:shadow-[0_8px_20px_-4px_rgba(98,127,88,0.06)]"
+                  className="group relative flex min-h-16 items-center gap-3.5 rounded-xl border border-slate-200/80 bg-white p-3.5 text-left transition-all duration-200 hover:border-emerald-500/35 hover:shadow-[0_8px_20px_-4px_rgb(var(--brand-green-rgb)/0.06)]"
                   href={resource.url}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50/50 text-[#627f58] transition-colors group-hover:bg-[#f3f7f1]/60 group-hover:border-[#627f58]/20">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50/50 text-emerald-500 transition-colors group-hover:bg-emerald-50/60 group-hover:border-emerald-500/20">
                     {resource.kind === "image" ? <ImageIcon className="h-5 w-5" /> : <FileIcon className="h-5 w-5" />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-slate-800 leading-snug group-hover:text-[#526d49] transition-colors">
+                    <span className="block truncate text-sm font-bold text-slate-800 leading-snug group-hover:text-emerald-700 transition-colors">
                       {resource.filename || resource.id}
                     </span>
                     <span className="mt-1.5 block truncate text-[11px] font-medium text-slate-400">

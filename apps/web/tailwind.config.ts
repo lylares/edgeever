@@ -1,6 +1,8 @@
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 
+const brandGreen = (shade: number) => `rgb(var(--brand-green-${shade}-rgb) / <alpha-value>)`;
+
 export default {
   content: {
     relative: true,
@@ -62,17 +64,17 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         emerald: {
-          50: "#f4f6f1",
-          100: "#e5ebdf",
-          200: "#cdd9c5",
-          300: "#a9bea0",
-          400: "#819c76",
-          500: "#627f58",
-          600: "#4b6545",
-          700: "#394f37",
-          800: "#293b2b",
-          900: "#1c2b20",
-          950: "#101a13",
+          50: brandGreen(50),
+          100: brandGreen(100),
+          200: brandGreen(200),
+          300: brandGreen(300),
+          400: brandGreen(400),
+          500: brandGreen(500),
+          600: brandGreen(600),
+          700: brandGreen(700),
+          800: brandGreen(800),
+          900: brandGreen(900),
+          950: brandGreen(950),
         },
       },
       keyframes: {
@@ -93,4 +95,3 @@ export default {
   },
   plugins: [tailwindAnimate],
 } satisfies Config;
-

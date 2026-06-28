@@ -6,6 +6,25 @@
   :root {
     --background: 80 11% 96%;
     --foreground: 224 71% 4%;
+    --brand-green: #00a82d;
+    --brand-green-hover: #008f26;
+    --brand-green-muted: #e6f6ea;
+    --brand-green-soft: #f0fbf3;
+    --brand-green-border: #99dcab;
+    --brand-green-text: #00751f;
+    --brand-green-rgb: 0 168 45;
+    --brand-green-hover-rgb: 0 143 38;
+    --brand-green-50-rgb: 230 246 234;
+    --brand-green-100-rgb: 204 237 213;
+    --brand-green-200-rgb: 153 220 171;
+    --brand-green-300-rgb: 102 202 128;
+    --brand-green-400-rgb: 51 185 86;
+    --brand-green-500-rgb: 0 168 45;
+    --brand-green-600-rgb: 0 143 38;
+    --brand-green-700-rgb: 0 117 31;
+    --brand-green-800-rgb: 0 92 25;
+    --brand-green-900-rgb: 0 67 18;
+    --brand-green-950-rgb: 0 43 11;
 
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -13,24 +32,24 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 102 18% 42%;
+    --primary: 136 100% 33%;
     --primary-foreground: 80 11% 96%;
 
-    --secondary: 90 16% 95%;
-    --secondary-foreground: 102 18% 42%;
+    --secondary: 136 55% 94%;
+    --secondary-foreground: 136 100% 25%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 90 16% 95%;
-    --accent-foreground: 102 18% 42%;
+    --accent: 136 55% 94%;
+    --accent-foreground: 136 100% 25%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 102 18% 42%;
+    --ring: 136 100% 33%;
 
     --radius: 0.5rem;
   }
@@ -115,29 +134,29 @@ textarea {
 
 .ProseMirror blockquote {
   margin: 0 0 1rem;
-  border-left: 3px solid #627f58;
+  border-left: 3px solid var(--brand-green);
   padding: 0.1rem 0 0.1rem 1rem;
   color: #475569;
-  background: #f4f6f1;
+  background: var(--brand-green-soft);
 }
 
 .ProseMirror code {
-  border: 1px solid #cdd9c5;
+  border: 1px solid var(--brand-green-border);
   border-radius: 5px;
-  background: #f4f6f1;
+  background: var(--brand-green-soft);
   padding: 0.08rem 0.28rem;
   font-size: 0.9em;
-  color: #293b2b;
+  color: rgb(var(--brand-green-800-rgb));
 }
 
 .ProseMirror pre {
   margin: 0 0 1rem;
   overflow-x: auto;
-  border: 1px solid #cdd9c5;
+  border: 1px solid var(--brand-green-border);
   border-radius: 8px;
-  background: #13231a;
+  background: rgb(var(--brand-green-950-rgb));
   padding: 0.9rem 1rem;
-  color: #edf3e9;
+  color: var(--brand-green-muted);
 }
 
 .ProseMirror pre code {
@@ -150,7 +169,7 @@ textarea {
 .ProseMirror hr {
   margin: 1.5rem 0;
   border: 0;
-  border-top: 1px solid #a9bea0;
+  border-top: 1px solid rgb(var(--brand-green-300-rgb));
 }
 
 .ProseMirror img {
@@ -158,12 +177,12 @@ textarea {
   max-width: 100%;
   height: auto;
   margin: 1rem 0;
-  border: 1px solid #cdd9c5;
+  border: 1px solid var(--brand-green-border);
   border-radius: 8px;
 }
 
 .ProseMirror img.ProseMirror-selectednode {
-  outline: 2px solid #627f58;
+  outline: 2px solid var(--brand-green);
   outline-offset: 3px;
 }
 

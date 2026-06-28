@@ -196,7 +196,7 @@ const MobileNotebookSelectSheet = ({
                     key={option.id}
                     className={cn(
                       "h-12 px-3 text-base",
-                      selected ? "bg-[#f3f7f1] font-semibold text-[#526d49] data-[selected=true]:bg-[#f3f7f1]" : "text-slate-700"
+                      selected ? "bg-emerald-50 font-semibold text-emerald-700 data-[selected=true]:bg-emerald-50" : "text-slate-700"
                     )}
                     style={{ paddingLeft: `${12 + option.depth * 18}px` }}
                     value={option.id}
@@ -1078,7 +1078,7 @@ export const EditorPane = ({
               persistCurrentDraft(event.target.value, tagsText);
               markDirty();
             }}
-            className="block w-full rounded-md border-0 bg-transparent text-2xl font-bold leading-tight text-slate-950 outline-none transition placeholder:text-slate-300 focus-visible:bg-slate-50 focus-visible:shadow-[inset_3px_0_0_#627f58] sm:text-3xl"
+            className="block w-full rounded-md border-0 bg-transparent text-2xl font-bold leading-tight text-slate-950 outline-none transition placeholder:text-slate-300 focus-visible:bg-slate-50 focus-visible:shadow-[inset_3px_0_0_var(--brand-green)] sm:text-3xl"
             placeholder={DEFAULT_MEMO_TITLE}
           />
           <label className="flex h-8 items-center gap-2 rounded-md border border-transparent px-2 text-sm text-slate-500 transition focus-within:border-slate-200 focus-within:bg-slate-50 focus-within:ring-2 focus-within:ring-emerald-500/15">

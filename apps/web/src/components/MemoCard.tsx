@@ -309,7 +309,7 @@ export const MemoCard = ({
         !selectionMode && selected
           ? "lg:bg-slate-100"
           : checked
-            ? "bg-[#f3f7f1] ring-1 ring-[#cbd9c4] lg:bg-slate-100 lg:ring-0"
+            ? "bg-emerald-50 ring-1 ring-emerald-200 lg:bg-slate-100 lg:ring-0"
             : "active:bg-slate-50 lg:hover:bg-slate-50"
       )}
     >
@@ -330,7 +330,7 @@ export const MemoCard = ({
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-150",
                 checked
-                  ? "border-[#627f58] bg-[#627f58] text-white shadow-[0_4px_10px_rgba(98,127,88,0.22)]"
+                  ? "border-emerald-500 bg-emerald-500 text-white shadow-[0_4px_10px_rgb(var(--brand-green-rgb)/0.22)]"
                   : "border-slate-300 bg-white text-transparent"
               )}
               aria-hidden="true"
@@ -341,7 +341,7 @@ export const MemoCard = ({
         )}
         <button
           className={cn(
-            "min-w-0 flex-1 px-4 py-4 text-left touch-pan-y focus-visible:bg-slate-50 focus-visible:shadow-[inset_3px_0_0_#627f58] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/60 [-webkit-touch-callout:none] lg:py-4 transition-all duration-200",
+            "min-w-0 flex-1 px-4 py-4 text-left touch-pan-y focus-visible:bg-slate-50 focus-visible:shadow-[inset_3px_0_0_var(--brand-green)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/60 [-webkit-touch-callout:none] lg:py-4 transition-all duration-200",
             listDensity === "compact" && "py-3",
             showSelectionControl && "pl-3 lg:pl-3",
             !isTrashView && !multiSelectKeyDown && "lg:cursor-grab lg:active:cursor-grabbing",
@@ -362,7 +362,7 @@ export const MemoCard = ({
           title="Ctrl/Cmd 点击切换选择，Shift 点击连续选择，可拖到左侧笔记本移动，移动端长按进入选择"
         >
           <div className={cn("mb-2 flex min-w-0 items-center gap-1.5 text-base font-semibold leading-6 text-slate-900 lg:text-base", listDensity === "compact" && "mb-1")}>
-            {memo.isPinned && <Star className="h-4 w-4 shrink-0 fill-current text-[#627f58]" />}
+            {memo.isPinned && <Star className="h-4 w-4 shrink-0 fill-current text-emerald-500" />}
             <span className="min-w-0 truncate">{memoTitle}</span>
           </div>
           <div

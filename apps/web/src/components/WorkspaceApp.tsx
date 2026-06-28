@@ -85,7 +85,7 @@ const MobileBottomNavButton = ({
   <button
     className={cn(
       "flex h-14 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium transition-all duration-200",
-      active ? "text-[#627f58]" : "text-slate-500 hover:bg-[#f3f7f1] hover:text-[#627f58]"
+      active ? "text-emerald-500" : "text-slate-500 hover:bg-emerald-50 hover:text-emerald-500"
     )}
     type="button"
     aria-current={active ? "page" : undefined}
@@ -121,7 +121,7 @@ const MobileBottomNav = ({
       <div aria-hidden="true" />
       <MobileBottomNavButton active={activeItem === "settings"} icon={<UserRound className="h-5 w-5" />} label="我的" onClick={onOpenSettings} />
       <button
-        className="absolute left-1/2 top-[-1.35rem] flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full border-[6px] border-white bg-[#627f58] text-white shadow-[0_12px_26px_rgba(98,127,88,0.32)] transition hover:bg-[#526d49] disabled:cursor-not-allowed disabled:bg-[#b7c5b0] disabled:opacity-70 disabled:hover:bg-[#b7c5b0]"
+        className="absolute left-1/2 top-[-1.35rem] flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full border-[6px] border-white bg-emerald-500 text-white shadow-[0_12px_26px_rgb(var(--brand-green-rgb)/0.32)] transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:opacity-70 disabled:hover:bg-emerald-200"
         type="button"
         title={!canCreateMemo ? "当前视图不可新建笔记" : isCreating ? "正在创建" : "新建笔记"}
         aria-label={!canCreateMemo ? "当前视图不可新建笔记" : isCreating ? "正在创建" : "新建笔记"}
@@ -254,7 +254,7 @@ const MobileNotebookPicker = ({
           <button
             className={cn(
               "mb-1 flex h-12 w-full items-center gap-3 rounded-md px-3 text-left text-sm transition",
-              allSelected ? "bg-[#f3f7f1] font-semibold text-[#526d49]" : "text-slate-800 hover:bg-slate-50"
+              allSelected ? "bg-emerald-50 font-semibold text-emerald-700" : "text-slate-800 hover:bg-slate-50"
             )}
             type="button"
             data-mobile-notebook-id="__all__"
@@ -270,7 +270,7 @@ const MobileNotebookPicker = ({
                 <span>{searchActive ? "匹配的笔记本" : "笔记本"}</span>
                 {!searchActive && expandableNotebookIds.length > 0 && (
                   <button
-                    className="rounded-md px-2 py-1 text-[#627f58] transition hover:bg-[#f3f7f1] hover:text-[#526d49]"
+                    className="rounded-md px-2 py-1 text-emerald-500 transition hover:bg-emerald-50 hover:text-emerald-700"
                     type="button"
                     aria-label={allNotebookBranchesExpanded ? "收起全部笔记本" : "展开全部笔记本"}
                     aria-pressed={allNotebookBranchesExpanded}
@@ -300,7 +300,7 @@ const MobileNotebookPicker = ({
               </div>
               {searchQuery && (
                 <button
-                  className="mt-3 text-sm font-semibold text-[#627f58]"
+                  className="mt-3 text-sm font-semibold text-emerald-500"
                   type="button"
                   onClick={() => setNotebookSearch("")}
                 >
@@ -344,9 +344,9 @@ const MobileNotebookPickerItem = ({
         className={cn(
           "flex h-12 w-full items-center gap-3 rounded-md px-3 text-left text-sm transition",
           selected
-            ? "bg-[#f3f7f1] font-semibold text-[#526d49]"
+            ? "bg-emerald-50 font-semibold text-emerald-700"
             : hasSelectedDescendant
-              ? "bg-[#f3f7f1]/70 text-[#526d49] hover:bg-[#f3f7f1]"
+              ? "bg-emerald-50/70 text-emerald-700 hover:bg-emerald-50"
               : "text-slate-800 hover:bg-slate-50"
         )}
         style={{ paddingLeft: `${12 + depth * 18}px` }}
@@ -1391,7 +1391,7 @@ export const WorkspaceApp = ({
   };
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-[#f6faf7] text-slate-950">
+    <div className="flex h-[100dvh] overflow-hidden bg-emerald-50 text-slate-950">
       <div className="min-w-0 flex-1">
         <main
           className={cn(

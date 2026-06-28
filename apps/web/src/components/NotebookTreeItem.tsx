@@ -155,12 +155,12 @@ export const NotebookTreeItem = ({
             className={cn(
               "group relative flex h-9 items-center gap-1 rounded-md px-2 text-sm transition-all duration-200 select-none",
               selected
-                ? "bg-[#f3f7f1] font-medium text-[#526d49]"
+                ? "bg-emerald-50 font-medium text-emerald-700"
                 : hasSelectedDescendant
-                  ? "bg-[#f3f7f1]/70 text-[#526d49] hover:bg-[#f3f7f1]"
+                  ? "bg-emerald-50/70 text-emerald-700 hover:bg-emerald-50"
                   : "text-slate-700 hover:bg-slate-50",
               dropPosition === "inside" && "ring-2 ring-[#9eb093]",
-              dropPosition === "inside" && hasChildren && !open && "bg-[#f3f7f1]"
+              dropPosition === "inside" && hasChildren && !open && "bg-emerald-50"
             )}
             draggable
             onDragStart={(event) => {
@@ -233,7 +233,7 @@ export const NotebookTreeItem = ({
                 }
               }}
             >
-              <NotebookIcon className={cn("h-4 w-4 shrink-0 transition-colors duration-200", selected || hasSelectedDescendant ? "text-[#627f58]" : "text-slate-500")} />
+              <NotebookIcon className={cn("h-4 w-4 shrink-0 transition-colors duration-200", selected || hasSelectedDescendant ? "text-emerald-500" : "text-slate-500")} />
               <span className="truncate">{node.name}</span>
             </button>
             <button
@@ -281,10 +281,10 @@ export const NotebookTreeItem = ({
               </button>
             ) : null}
             {dropPosition === "before" && (
-              <div className="absolute top-0 right-2 h-[3px] bg-[#627f58] rounded-full z-30 animate-pulse" style={{ left: `${20 + depth * 14}px` }} />
+              <div className="absolute top-0 right-2 h-[3px] bg-emerald-500 rounded-full z-30 animate-pulse" style={{ left: `${20 + depth * 14}px` }} />
             )}
             {dropPosition === "after" && (
-              <div className="absolute bottom-0 right-2 h-[3px] bg-[#627f58] rounded-full z-30 animate-pulse" style={{ left: `${20 + depth * 14}px` }} />
+              <div className="absolute bottom-0 right-2 h-[3px] bg-emerald-500 rounded-full z-30 animate-pulse" style={{ left: `${20 + depth * 14}px` }} />
             )}
           </div>
         </ContextMenuTrigger>

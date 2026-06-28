@@ -125,7 +125,7 @@ export const SettingsPane = ({
         <div className="mx-auto max-w-2xl space-y-6">
           {/* Section 1: User Profile */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#809f75] to-[#526d49] text-xl font-bold text-white uppercase shadow-md">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-xl font-bold text-white uppercase shadow-md">
               {user?.username?.charAt(0) ?? "U"}
             </div>
             <div className="min-w-0 flex-1">
@@ -194,7 +194,7 @@ export const SettingsPane = ({
             <form className="space-y-4 rounded-lg bg-slate-50/60 border border-slate-100 p-4" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
-                  className="min-w-0 flex-1 rounded-lg focus-visible:ring-4 focus-visible:ring-[#627f58]/10"
+                  className="min-w-0 flex-1 rounded-lg focus-visible:ring-4 focus-visible:ring-emerald-500/10"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Token 用途描述，例如: Cline Agent"
@@ -202,7 +202,7 @@ export const SettingsPane = ({
                 <Button 
                   size="md" 
                   variant="solid" 
-                  className="h-10 bg-[#627f58] hover:bg-[#526d49] text-white shrink-0"
+                  className="h-10 bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
                   type="submit" 
                   disabled={createMutation.isPending}
                 >
@@ -220,7 +220,7 @@ export const SettingsPane = ({
                       className={cn(
                         "flex min-h-9 items-center gap-3 rounded-lg border px-3 py-1 cursor-pointer transition-all duration-150",
                         selectedScopes.has(scope)
-                          ? "border-[#627f58]/30 bg-[#f3f7f1]/50 text-[#526d49]"
+                          ? "border-emerald-500/30 bg-emerald-50/50 text-emerald-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50/50"
                       )}
                     >

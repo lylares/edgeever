@@ -309,7 +309,7 @@ export const NotebookPane = ({
             onClick={onCreateMemo}
             disabled={!canCreateMemo || isCreatingMemo}
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_8px_18px_rgba(5,150,105,0.28)] transition-transform duration-200 group-hover:scale-105">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-[0_8px_18px_rgb(var(--brand-green-rgb)/0.28)] transition-transform duration-200 group-hover:scale-105">
               <Plus className="h-6 w-6" />
             </span>
             <span className="min-w-0 truncate text-sm font-semibold text-slate-950">新建笔记</span>
@@ -383,7 +383,7 @@ export const NotebookPane = ({
             onClick={onOpenSettings}
             className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 text-left hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#809f75] to-[#526d49] text-sm font-semibold text-white uppercase shadow-[0_2px_8px_rgba(98,127,88,0.15)]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-semibold text-white uppercase shadow-[0_2px_8px_rgb(var(--brand-green-rgb)/0.15)]">
               {user?.username?.charAt(0) ?? "L"}
             </div>
             <div className="min-w-0 flex-1">

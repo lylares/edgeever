@@ -201,14 +201,14 @@ const MobileListActionsSheet = ({
             {memoListDensityOptions.map((option) => (
               <ToggleGroupItem
                 key={option.value}
-                className="h-11 w-full justify-start gap-3 rounded-md px-3 text-left text-sm data-[state=on]:bg-[#f3f7f1] data-[state=on]:text-[#526d49]"
+                className="h-11 w-full justify-start gap-3 rounded-md px-3 text-left text-sm data-[state=on]:bg-emerald-50 data-[state=on]:text-emerald-700"
                 size="default"
                 value={option.value}
                 aria-label={option.label}
               >
-                <span className={listDensity === option.value ? "text-[#627f58]" : "text-slate-500"}>{option.icon}</span>
+                <span className={listDensity === option.value ? "text-emerald-500" : "text-slate-500"}>{option.icon}</span>
                 <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                <CheckCircleCheck className={cn("h-4 w-4 shrink-0", listDensity === option.value ? "text-[#627f58]" : "text-transparent")} />
+                <CheckCircleCheck className={cn("h-4 w-4 shrink-0", listDensity === option.value ? "text-emerald-500" : "text-transparent")} />
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -221,14 +221,14 @@ const MobileListActionsSheet = ({
               key={option.value}
               className={cn(
                 "flex h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium transition",
-                sortMode === option.value ? "bg-[#f3f7f1] text-[#526d49]" : "text-slate-800 hover:bg-slate-50"
+                sortMode === option.value ? "bg-emerald-50 text-emerald-700" : "text-slate-800 hover:bg-slate-50"
               )}
               type="button"
               aria-pressed={sortMode === option.value}
               onClick={() => onSortModeChange(option.value)}
             >
               <span className="min-w-0 flex-1 truncate">{option.label}</span>
-              <CheckCircleCheck className={cn("h-4 w-4 shrink-0", sortMode === option.value ? "text-[#627f58]" : "text-transparent")} />
+              <CheckCircleCheck className={cn("h-4 w-4 shrink-0", sortMode === option.value ? "text-emerald-500" : "text-transparent")} />
             </button>
           ))}
 
@@ -364,7 +364,7 @@ const MobileMoveSheet = ({
                     key={option.id}
                     className={cn(
                       "h-11 gap-2 px-3",
-                      selected ? "bg-[#f3f7f1] font-semibold text-[#526d49] data-[selected=true]:bg-[#f3f7f1]" : "text-slate-700"
+                      selected ? "bg-emerald-50 font-semibold text-emerald-700 data-[selected=true]:bg-emerald-50" : "text-slate-700"
                     )}
                     style={{ paddingLeft: `${12 + option.depth * 18}px` }}
                     value={option.id}
@@ -375,9 +375,9 @@ const MobileMoveSheet = ({
                     disabled={isMoving}
                     onSelect={() => onMove(option.id)}
                   >
-                    <NotebookIcon className={cn("h-4 w-4 shrink-0", selected ? "text-[#627f58]" : "text-slate-600")} />
+                    <NotebookIcon className={cn("h-4 w-4 shrink-0", selected ? "text-emerald-500" : "text-slate-600")} />
                     <span className="min-w-0 flex-1 truncate">{option.name}</span>
-                    {selected ? <CheckCircleCheck className="h-4 w-4 shrink-0 text-[#627f58]" /> : null}
+                    {selected ? <CheckCircleCheck className="h-4 w-4 shrink-0 text-emerald-500" /> : null}
                   </CommandItem>
                 );
               })}
@@ -1074,7 +1074,7 @@ export const MemoListPane = ({
       tabIndex={0}
       onKeyDown={handleListKeyDown}
     >
-      <header className="border-b border-slate-200 bg-[#f6faf7] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-bottom))] lg:bg-white lg:py-3 lg:pt-3">
+      <header className="border-b border-slate-200 bg-emerald-50 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-bottom))] lg:bg-white lg:py-3 lg:pt-3">
         {selectionMode ? (
           <div className="mb-3 flex h-10 min-w-0 items-center gap-3 lg:hidden">
             <button
@@ -1370,7 +1370,7 @@ export const MemoListPane = ({
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-full border transition",
                   filterMode === option.value
-                    ? "border-emerald-600 bg-emerald-600 text-white shadow-[0_8px_18px_rgba(5,150,105,0.22)]"
+                    ? "border-emerald-600 bg-emerald-600 text-white shadow-[0_8px_18px_rgb(var(--brand-green-rgb)/0.22)]"
                     : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                 )}
                 type="button"
@@ -1408,7 +1408,7 @@ export const MemoListPane = ({
         {selectionMode && (
           <div className="sticky top-0 z-10 mb-3 hidden flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 shadow-panel lg:flex">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <CheckSquare className="h-4 w-4 text-[#627f58]" />
+              <CheckSquare className="h-4 w-4 text-emerald-500" />
               {selectionCountLabel}
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -1513,7 +1513,7 @@ export const MemoListPane = ({
           <div className="space-y-4 lg:space-y-0 lg:overflow-hidden lg:rounded-sm lg:border-y lg:border-slate-200 lg:bg-white">
             {memoGroups.map((group) => (
               <section key={group.key}>
-                <div className="sticky top-0 z-[4] flex h-7 items-center justify-between bg-[#f6faf7]/90 px-1 text-xs font-medium text-slate-300 backdrop-blur lg:h-9 lg:border-b lg:border-slate-200 lg:bg-white/95 lg:px-4 lg:text-sm lg:font-semibold lg:text-slate-500">
+                <div className="sticky top-0 z-[4] flex h-7 items-center justify-between bg-emerald-50/90 px-1 text-xs font-medium text-slate-300 backdrop-blur lg:h-9 lg:border-b lg:border-slate-200 lg:bg-white/95 lg:px-4 lg:text-sm lg:font-semibold lg:text-slate-500">
                   <span>{group.label}</span>
                   <span className="text-[11px] font-medium text-slate-300 lg:text-sm lg:font-semibold lg:text-slate-500">{group.items.length}</span>
                 </div>
@@ -1719,7 +1719,7 @@ export const MemoListPane = ({
                       onPinSelectedMemos(selectedPinTarget);
                     }}
                   >
-                    <Star className={cn("h-4 w-4", !selectedPinTarget && "fill-current text-[#627f58]")} />
+                    <Star className={cn("h-4 w-4", !selectedPinTarget && "fill-current text-emerald-500")} />
                     {selectionPinLabel}
                   </DropdownMenuItem>
                   <DropdownMenuItem
