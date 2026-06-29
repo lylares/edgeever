@@ -698,7 +698,7 @@
       ],
       "post": {
         "summary": "Upload image resource for memo",
-        "description": "Uploads an image resource for a memo. The API attempts server-side compression for PNG, JPEG, WebP, and AVIF images before storing the resource.",
+        "description": "Uploads an image resource for a memo. Images are stored as provided; server-side compression is disabled.",
         "requestBody": {
           "required": true,
           "content": {

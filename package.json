@@ -37,9 +37,6 @@
       },
       "RESOURCES": {
         "description": "EdgeEver 的 R2 对象存储桶。用于存储笔记内图片、附件和未来导入导出文件；D1 只保存资源元数据和 memo 关联。"
-      },
-      "IMAGES": {
-        "description": "Cloudflare Images binding。用于在 Worker 中对 Web、REST API 与 MCP 上传的笔记图片进行服务端压缩。"
       }
     }
   },

@@ -39,7 +39,6 @@ import openApiSpec from "../../../docs/openapi.json";
 type Bindings = {
   DB: D1Database;
   RESOURCES: R2Bucket;
-  IMAGES?: ImagesBinding;
   EDGE_EVER_AUTH_USERNAME?: string;
   EDGE_EVER_AUTH_PASSWORD_HASH?: string;
   EDGE_EVER_SESSION_TTL_DAYS?: string;
@@ -196,10 +195,6 @@ const DEFAULT_SESSION_TTL_DAYS = 30;
 const DEFAULT_R2_BUCKET_NAME = "edgeever-resources";
 const MAX_IMAGE_UPLOAD_BYTES = 50 * 1024 * 1024;
 const MAX_ATTACHMENT_UPLOAD_BYTES = 50 * 1024 * 1024;
-const MAX_COMPRESSED_IMAGE_EDGE = 2560;
-const IMAGE_COMPRESSION_QUALITY = 82;
-const COMPRESSED_IMAGE_MIME_TYPE = "image/webp";
-const COMPRESSED_IMAGE_EXTENSION = ".webp";
 const REVISION_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000;
 const API_TOKEN_BYTES = 32;
 const API_TOKEN_PREFIX = "eev";
@@ -221,7 +216,6 @@ const SUPPORTED_IMAGE_MIME_TYPES = new Set([
   "image/webp",
   "image/avif",
 ]);
-const COMPRESSIBLE_IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 
 const app = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
@@ -983,7 +977,7 @@ const createImageResource = async (
 
   const resourceId = createId("res");
   const now = isoNow();
-  const processed = await prepareImageForStorage(c.env.IMAGES, {
+  const processed = prepareImageForStorage({
     bytes: input.bytes,
     filename: input.filename,
     mimeType: input.mimeType,
@@ -1146,130 +1140,26 @@ type PreparedImage = {
   metadata: Record<string, unknown>;
 };
 
-const prepareImageForStorage = async (
-  images: ImagesBinding | undefined,
-  input: { bytes: Uint8Array; filename: string; mimeType: string; source: "upload" | "mcp" }
-): Promise<PreparedImage> => {
-  const baseMetadata: Record<string, unknown> = {
+const prepareImageForStorage = (input: {
+  bytes: Uint8Array;
+  filename: string;
+  mimeType: string;
+  source: "upload" | "mcp";
+}): PreparedImage => ({
+  bytes: input.bytes,
+  mimeType: input.mimeType,
+  filename: input.filename,
+  width: null,
+  height: null,
+  compressed: false,
+  metadata: {
     source: input.source,
     originalFilename: normalizeFilename(input.filename) || null,
     originalMimeType: input.mimeType,
     originalByteSize: input.bytes.byteLength,
-  };
-
-  if (!images) {
-    return {
-      bytes: input.bytes,
-      mimeType: input.mimeType,
-      filename: input.filename,
-      width: null,
-      height: null,
-      compressed: false,
-      metadata: {
-        ...baseMetadata,
-        compression: "unavailable",
-      },
-    };
-  }
-
-  let info: ImageInfoResponse | null = null;
-
-  try {
-    info = await images.info(bytesToStream(input.bytes));
-  } catch {
-    info = null;
-  }
-
-  const originalWidth = getPositiveInteger(info && "width" in info ? info.width : null);
-  const originalHeight = getPositiveInteger(info && "height" in info ? info.height : null);
-  const baseResult = {
-    bytes: input.bytes,
-    mimeType: input.mimeType,
-    filename: input.filename,
-    width: originalWidth,
-    height: originalHeight,
-    compressed: false,
-    metadata: {
-      ...baseMetadata,
-      width: originalWidth,
-      height: originalHeight,
-      compressed: false,
-    },
-  };
-
-  if (!COMPRESSIBLE_IMAGE_MIME_TYPES.has(input.mimeType)) {
-    return baseResult;
-  }
-
-  try {
-    const transform: ImageTransform = {};
-    const maxEdge = originalWidth && originalHeight ? Math.max(originalWidth, originalHeight) : null;
-
-    if (maxEdge && maxEdge > MAX_COMPRESSED_IMAGE_EDGE) {
-      const scale = MAX_COMPRESSED_IMAGE_EDGE / maxEdge;
-      transform.width = Math.max(1, Math.round((originalWidth ?? maxEdge) * scale));
-      transform.height = Math.max(1, Math.round((originalHeight ?? maxEdge) * scale));
-      transform.fit = "scale-down";
-    }
-
-    const result = await images
-      .input(bytesToStream(input.bytes))
-      .transform(transform)
-      .output({ format: COMPRESSED_IMAGE_MIME_TYPE, quality: IMAGE_COMPRESSION_QUALITY });
-    const response = result.response();
-    const contentType = result.contentType() || response.headers.get("Content-Type") || COMPRESSED_IMAGE_MIME_TYPE;
-    const compressedBytes = new Uint8Array(await response.arrayBuffer());
-
-    if (contentType !== COMPRESSED_IMAGE_MIME_TYPE || compressedBytes.byteLength >= input.bytes.byteLength) {
-      return baseResult;
-    }
-
-    return {
-      bytes: compressedBytes,
-      mimeType: COMPRESSED_IMAGE_MIME_TYPE,
-      filename: toCompressedFilename(input.filename),
-      width: transform.width ?? originalWidth,
-      height: transform.height ?? originalHeight,
-      compressed: true,
-      metadata: {
-        ...baseMetadata,
-        width: originalWidth,
-        height: originalHeight,
-        compressed: true,
-        compression: {
-          format: COMPRESSED_IMAGE_MIME_TYPE,
-          quality: IMAGE_COMPRESSION_QUALITY,
-          maxEdge: MAX_COMPRESSED_IMAGE_EDGE,
-          originalByteSize: input.bytes.byteLength,
-          byteSize: compressedBytes.byteLength,
-        },
-      },
-    };
-  } catch {
-    return baseResult;
-  }
-};
-
-const bytesToStream = (bytes: Uint8Array) =>
-  new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(bytes);
-      controller.close();
-    },
-  });
-
-const getPositiveInteger = (value: unknown) =>
-  typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
-
-const toCompressedFilename = (filename: string) => {
-  const trimmed = filename.trim();
-
-  if (!trimmed) {
-    return `image${COMPRESSED_IMAGE_EXTENSION}`;
-  }
-
-  return trimmed.replace(/\.[^.]+$/, "") + COMPRESSED_IMAGE_EXTENSION;
-};
+    compression: "disabled",
+  },
+});
 
 app.get("/api/v1/resources/:id/blob", async (c) => {
   const denied = requireScopes(c, "read:resources");
@@ -1791,7 +1681,7 @@ const MCP_TOOLS = [
   {
     name: "upload_memo_image",
     description:
-      "Upload a base64-encoded image resource to a memo. The server compresses supported images before storing them and returns Markdown that can be inserted into memo content.",
+      "Upload a base64-encoded image resource to a memo and return Markdown that can be inserted into memo content. Images are stored as provided; server-side compression is disabled to avoid Cloudflare Images quota usage.",
     inputSchema: {
       type: "object",
       required: ["memoId", "mimeType", "dataBase64"],
