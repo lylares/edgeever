@@ -133,6 +133,7 @@ type SessionRow = {
 type ApiTokenRow = {
   id: string;
   name: string;
+  token_value: string | null;
   scopes_json: string;
   last_used_at: string | null;
   expires_at: string | null;
@@ -363,7 +364,7 @@ app.get("/api/v1/api-tokens", async (c) => {
   }
 
   const rows = await c.env.DB.prepare(
-    `SELECT id, name, scopes_json, last_used_at, expires_at, is_revoked, created_at
+    `SELECT id, name, token_value, scopes_json, last_used_at, expires_at, is_revoked, created_at
      FROM api_tokens
      ORDER BY is_revoked ASC, created_at DESC
      LIMIT 200`
@@ -396,9 +397,9 @@ app.post("/api/v1/api-tokens", zValidator("json", ApiTokenCreateSchema), async (
 
   await c.env.DB.batch([
     c.env.DB.prepare(
-      `INSERT INTO api_tokens (id, name, token_hash, scopes_json, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(id, input.name, await sha256(token), JSON.stringify(scopes), input.expiresAt ?? null, now),
+      `INSERT INTO api_tokens (id, name, token_hash, token_value, scopes_json, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id, input.name, await sha256(token), token, JSON.stringify(scopes), input.expiresAt ?? null, now),
     auditStatement(c.env.DB, actor.actorType, actor.actorId, "api_token.create", "api_token", id, {
       name: input.name,
       scopes,
@@ -2145,7 +2146,7 @@ const authenticateBearerToken = async (c: AppContext, touch: boolean): Promise<A
   }
 
   const row = await c.env.DB.prepare(
-    `SELECT id, name, scopes_json, last_used_at, expires_at, is_revoked, created_at
+    `SELECT id, name, token_value, scopes_json, last_used_at, expires_at, is_revoked, created_at
      FROM api_tokens
      WHERE token_hash = ?
        AND is_revoked = 0
@@ -2489,6 +2490,7 @@ const mapResourceStorageSummary = (row: ResourceStatsRow | null): ResourceStorag
 const mapApiToken = (row: ApiTokenRow): ApiToken => ({
   id: row.id,
   name: row.name,
+  token: row.token_value,
   scopes: parseJsonArray(row.scopes_json),
   lastUsedAt: row.last_used_at,
   expiresAt: row.expires_at,
@@ -2505,7 +2507,7 @@ const mapTagSummary = (row: TagSummaryRow): TagSummary => ({
 const getApiTokenRow = async (db: D1Database, id: string): Promise<ApiTokenRow | null> =>
   db
     .prepare(
-      `SELECT id, name, scopes_json, last_used_at, expires_at, is_revoked, created_at
+      `SELECT id, name, token_value, scopes_json, last_used_at, expires_at, is_revoked, created_at
        FROM api_tokens
        WHERE id = ?`
     )

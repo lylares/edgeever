@@ -1368,6 +1368,9 @@
           "name": {
             "type": "string"
           },
+          "token": {
+            "type": ["string", "null"]
+          },
           "scopes": {
             "type": "array",
             "items": {
@@ -1390,7 +1393,7 @@
             "format": "date-time"
           }
         },
-        "required": ["id", "name", "scopes", "lastUsedAt", "expiresAt", "isRevoked", "createdAt"]
+        "required": ["id", "name", "token", "scopes", "lastUsedAt", "expiresAt", "isRevoked", "createdAt"]
       },
       "ApiTokenCreateInput": {
         "type": "object",

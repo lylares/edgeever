@@ -85,6 +85,7 @@ export type ResourceStorageSummary = {
 export type ApiToken = {
   id: string;
   name: string;
+  token: string | null;
   scopes: string[];
   lastUsedAt: string | null;
   expiresAt: string | null;

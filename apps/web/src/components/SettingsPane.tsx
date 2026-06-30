@@ -165,7 +165,7 @@ const CreatedTokenNotice = ({ token }: CreatedTokenNoticeProps) => {
           {copied ? "已复制" : "复制 Token"}
         </Button>
       </div>
-      <p className="mt-2 text-xs font-medium leading-4 text-emerald-800">安全提醒：明文 Token 仅展示一次，关闭后无法再次找回。</p>
+      <p className="mt-2 text-xs font-medium leading-4 text-emerald-800">安全提醒：此 Token 后续仍可在列表中复制，请仅授予需要的权限。</p>
     </div>
   );
 };
@@ -337,6 +337,19 @@ interface TokenListProps {
 }
 
 const TokenList = ({ tokens, isLoading, isRevoking, onRevoke }: TokenListProps) => {
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+
+  const handleCopy = async (token: ApiToken) => {
+    if (!token.token || !(await copyTextToClipboard(token.token))) {
+      return;
+    }
+
+    setCopiedTokenId(token.id);
+    window.setTimeout(() => {
+      setCopiedTokenId((current) => (current === token.id ? null : current));
+    }, 1600);
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
@@ -373,8 +386,20 @@ const TokenList = ({ tokens, isLoading, isRevoking, onRevoke }: TokenListProps) 
             </span>
             <span className="mt-2 block text-[11px] font-medium text-slate-400">
               {token.lastUsedAt ? `上次调用时间：${formatDateTime(token.lastUsedAt)}` : "从未被调用"}
+              {!token.token ? " · 旧 Token 无法找回明文，请重新生成" : ""}
             </span>
           </span>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-9 w-9 shrink-0 bg-white"
+            title={token.token ? "复制 Token" : "旧 Token 无法复制"}
+            aria-label={token.token ? "复制 Token" : "旧 Token 无法复制"}
+            disabled={token.isRevoked || !token.token}
+            onClick={() => void handleCopy(token)}
+          >
+            {copiedTokenId === token.id ? <ShieldCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
           <Button
             size="icon"
             variant="danger"
