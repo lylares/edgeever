@@ -33,9 +33,9 @@ export const EvernoteImportGuidePane = ({ onClose }: { onClose: () => void }) =>
       </header>
 
       <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 lg:px-6 lg:py-6">
-        <article className="mx-auto w-full min-w-0 max-w-4xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <article className="mx-auto w-full min-w-0 max-w-4xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div
-            className="prose prose-slate max-w-none text-sm leading-6 text-slate-700 dark:prose-invert prose-headings:font-bold prose-a:text-emerald-700"
+            className="markdown-content max-w-none"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
         </article>
