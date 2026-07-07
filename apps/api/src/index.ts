@@ -1906,20 +1906,27 @@ const mapMcpToolError = (error: unknown) => {
 const MCP_TOOLS = [
   {
     name: "search_memos",
-    description: "Search active EdgeEver memos by text, tag, or notebook.",
+    description: "Search active EdgeEver memos by text, tag, notebook, time range, pin state, or resource presence.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
         query: { type: "string" },
         notebookId: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+        createdAfter: { type: "string", format: "date-time" },
+        createdBefore: { type: "string", format: "date-time" },
+        updatedAfter: { type: "string", format: "date-time" },
+        updatedBefore: { type: "string", format: "date-time" },
+        isPinned: { type: "boolean" },
+        hasResources: { type: "boolean" },
         limit: { type: "integer", minimum: 1, maximum: 50 },
       },
     },
   },
   {
     name: "list_memos",
-    description: "List active EdgeEver memos with pagination. Use includeContent when full Markdown is needed.",
+    description: "List EdgeEver memos with pagination. Use includeContent when full Markdown is needed.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -1928,6 +1935,7 @@ const MCP_TOOLS = [
         limit: { type: "integer", minimum: 1, maximum: 100 },
         offset: { type: "integer", minimum: 0 },
         includeContent: { type: "boolean" },
+        includeDeleted: { type: "boolean" },
       },
     },
   },
@@ -1940,6 +1948,7 @@ const MCP_TOOLS = [
       additionalProperties: false,
       properties: {
         memoId: { type: "string" },
+        includeDeleted: { type: "boolean" },
       },
     },
   },
@@ -1981,6 +1990,115 @@ const MCP_TOOLS = [
     },
   },
   {
+    name: "trash_memos",
+    description: "Move one or more active memos to trash. Use dryRun to preview affected memos.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "restore_memos",
+    description: "Restore one or more trashed memos. If the original notebook is gone, memos are restored to the default inbox.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "move_memos",
+    description: "Move one or more active memos to another notebook. Use dryRun to preview affected memos.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds", "notebookId"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
+        notebookId: { type: "string" },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "add_tags_to_memos",
+    description: "Add tags to one or more active memos. Use dryRun to preview changed tags.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds", "tags"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
+        tags: { type: "array", minItems: 1, maxItems: 20, items: { type: "string" } },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "remove_tags_from_memos",
+    description: "Remove tags from one or more active memos. Use dryRun to preview changed tags.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds", "tags"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
+        tags: { type: "array", minItems: 1, maxItems: 20, items: { type: "string" } },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "rename_tag",
+    description: "Rename a tag across all active memos. This merges into an existing tag with the same normalized name.",
+    inputSchema: {
+      type: "object",
+      required: ["from", "to"],
+      additionalProperties: false,
+      properties: {
+        from: { type: "string" },
+        to: { type: "string" },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "delete_tag",
+    description: "Remove a tag from all active memos.",
+    inputSchema: {
+      type: "object",
+      required: ["tag"],
+      additionalProperties: false,
+      properties: {
+        tag: { type: "string" },
+        dryRun: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "merge_memos",
+    description: "Merge multiple active memos into a new memo and soft-delete the sources.",
+    inputSchema: {
+      type: "object",
+      required: ["memoIds"],
+      additionalProperties: false,
+      properties: {
+        memoIds: { type: "array", minItems: 2, maxItems: 50, items: { type: "string" } },
+        notebookId: { type: "string" },
+        title: { type: "string" },
+      },
+    },
+  },
+  {
     name: "upload_memo_image",
     description:
       "Upload a base64-encoded image resource to a memo and return Markdown that can be inserted into memo content. Images are stored as provided; server-side compression is disabled to avoid Cloudflare Images quota usage.",
@@ -1998,29 +2116,68 @@ const MCP_TOOLS = [
     },
   },
   {
-    name: "move_memos",
-    description: "Move one or more active memos to another notebook.",
+    name: "upload_memo_attachment",
+    description: "Upload a base64-encoded attachment resource to a memo and return Markdown link text that can be inserted into memo content.",
     inputSchema: {
       type: "object",
-      required: ["memoIds", "notebookId"],
+      required: ["memoId", "filename", "mimeType", "dataBase64"],
       additionalProperties: false,
       properties: {
-        memoIds: { type: "array", minItems: 1, maxItems: 100, items: { type: "string" } },
-        notebookId: { type: "string" },
+        memoId: { type: "string" },
+        filename: { type: "string" },
+        mimeType: { type: "string" },
+        dataBase64: { type: "string" },
+        label: { type: "string" },
       },
     },
   },
   {
-    name: "merge_memos",
-    description: "Merge multiple active memos into a new memo and soft-delete the sources.",
+    name: "list_memo_resources",
+    description: "List active resources attached to a memo.",
     inputSchema: {
       type: "object",
-      required: ["memoIds"],
+      required: ["memoId"],
       additionalProperties: false,
       properties: {
-        memoIds: { type: "array", minItems: 2, maxItems: 50, items: { type: "string" } },
-        notebookId: { type: "string" },
-        title: { type: "string" },
+        memoId: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "list_resources",
+    description: "List active workspace resources with storage summary.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        limit: { type: "integer", minimum: 1, maximum: 500 },
+      },
+    },
+  },
+  {
+    name: "list_memo_revisions",
+    description: "List revision history for a memo.",
+    inputSchema: {
+      type: "object",
+      required: ["memoId"],
+      additionalProperties: false,
+      properties: {
+        memoId: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 100 },
+      },
+    },
+  },
+  {
+    name: "restore_memo_revision",
+    description: "Restore a memo to a previous revision. Use dryRun to preview the target revision.",
+    inputSchema: {
+      type: "object",
+      required: ["memoId", "revisionId"],
+      additionalProperties: false,
+      properties: {
+        memoId: { type: "string" },
+        revisionId: { type: "string" },
+        dryRun: { type: "boolean" },
       },
     },
   },
@@ -2070,6 +2227,15 @@ const MCP_TOOLS = [
       properties: {},
     },
   },
+  {
+    name: "get_workspace_stats",
+    description: "Get notebook, memo, tag, and resource counts for workspace diagnostics.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {},
+    },
+  },
 ];
 
 const callMcpTool = async (
@@ -2085,6 +2251,13 @@ const callMcpTool = async (
         memos: await searchMemoSummaries(c.env.DB, {
           query: getOptionalString(args.query),
           notebookId: getOptionalString(args.notebookId),
+          tags: getOptionalStringArray(args.tags),
+          createdAfter: getOptionalString(args.createdAfter),
+          createdBefore: getOptionalString(args.createdBefore),
+          updatedAfter: getOptionalString(args.updatedAfter),
+          updatedBefore: getOptionalString(args.updatedBefore),
+          isPinned: typeof args.isPinned === "boolean" ? args.isPinned : null,
+          hasResources: typeof args.hasResources === "boolean" ? args.hasResources : null,
           limit: clampNumber(Number(args.limit ?? 20), 1, 50),
         }),
       };
@@ -2096,12 +2269,13 @@ const callMcpTool = async (
         limit: clampNumber(Number(args.limit ?? 50), 1, 100),
         offset: clampNumber(Number(args.offset ?? 0), 0, 100_000),
         includeContent: args.includeContent === true,
+        includeDeleted: args.includeDeleted === true,
       });
     }
     case "get_memo": {
       assertScope(auth, "read:memos");
       const memoId = getRequiredString(args.memoId, "memoId");
-      const memo = await getMemoDetail(c.env.DB, memoId);
+      const memo = await getMemoDetail(c.env.DB, memoId, args.includeDeleted === true);
 
       if (!memo) {
         throw new Error("Memo not found");
@@ -2156,6 +2330,28 @@ const callMcpTool = async (
 
       return { memo: result.memo };
     }
+    case "trash_memos": {
+      assertScope(auth, "write:memos");
+      const memoIds = getRequiredStringArray(args.memoIds, "memoIds");
+
+      if (args.dryRun === true) {
+        return { dryRun: true, memos: await getMemosForBulkAction(c.env.DB, memoIds, 0) };
+      }
+
+      const deleted = await deleteMemosRecord(c.env.DB, c.env.RESOURCES, memoIds, false, getAuditActor(c));
+      return { ok: true, deleted };
+    }
+    case "restore_memos": {
+      assertScope(auth, "write:memos");
+      const memoIds = getRequiredStringArray(args.memoIds, "memoIds");
+
+      if (args.dryRun === true) {
+        return { dryRun: true, memos: await getMemosForBulkAction(c.env.DB, memoIds, 1) };
+      }
+
+      const restored = await restoreMemosRecord(c.env.DB, memoIds, getAuditActor(c));
+      return { ok: true, restored };
+    }
     case "upload_memo_image": {
       assertScope(auth, "write:resources");
       const memoId = getRequiredString(args.memoId, "memoId");
@@ -2167,7 +2363,7 @@ const callMcpTool = async (
 
       const mimeType = getRequiredString(args.mimeType, "mimeType");
       const filename = getOptionalString(args.filename) ?? `image${inferImageExtension("", mimeType)}`;
-      const bytes = await decodeBase64ImageData(getRequiredString(args.dataBase64, "dataBase64"));
+      const bytes = await decodeBase64Data(getRequiredString(args.dataBase64, "dataBase64"));
       const resource = await createImageResource(c, {
         memoId,
         filename,
@@ -2193,11 +2389,60 @@ const callMcpTool = async (
         throw new AppError("not_found", "Target notebook not found", 404);
       }
 
+      if (args.dryRun === true) {
+        return { dryRun: true, targetNotebook: target, memos: await getMemosForBulkAction(c.env.DB, memoIds, 0) };
+      }
+
       const actor = getAuditActor(c);
       const actorLabel = getActorLabel(c);
       const moved = await moveMemosToNotebook(c.env.DB, memoIds, notebookId, actor, actorLabel);
 
       return { ok: true, moved };
+    }
+    case "add_tags_to_memos": {
+      assertScope(auth, "write:tags");
+      return await updateTagsForMemos(c.env.DB, {
+        memoIds: getRequiredStringArray(args.memoIds, "memoIds"),
+        tags: getRequiredStringArray(args.tags, "tags"),
+        mode: "add",
+        dryRun: args.dryRun === true,
+        actor: getAuditActor(c),
+        actorLabel: getActorLabel(c),
+      });
+    }
+    case "remove_tags_from_memos": {
+      assertScope(auth, "write:tags");
+      return await updateTagsForMemos(c.env.DB, {
+        memoIds: getRequiredStringArray(args.memoIds, "memoIds"),
+        tags: getRequiredStringArray(args.tags, "tags"),
+        mode: "remove",
+        dryRun: args.dryRun === true,
+        actor: getAuditActor(c),
+        actorLabel: getActorLabel(c),
+      });
+    }
+    case "rename_tag": {
+      assertScope(auth, "write:tags");
+      const from = getRequiredString(args.from, "from");
+      const to = getRequiredString(args.to, "to");
+
+      if (args.dryRun === true) {
+        return await previewTagRename(c.env.DB, from, to);
+      }
+
+      const updated = await updateTagAcrossMemos(c.env.DB, from, to, getAuditActor(c), getActorLabel(c));
+      return { ok: true, updated };
+    }
+    case "delete_tag": {
+      assertScope(auth, "write:tags");
+      const tag = getRequiredString(args.tag, "tag");
+
+      if (args.dryRun === true) {
+        return await previewTagRename(c.env.DB, tag, null);
+      }
+
+      const updated = await updateTagAcrossMemos(c.env.DB, tag, null, getAuditActor(c), getActorLabel(c));
+      return { ok: true, updated };
     }
     case "merge_memos": {
       assertScope(auth, "write:memos");
@@ -2215,6 +2460,72 @@ const callMcpTool = async (
       );
 
       return { memo };
+    }
+    case "upload_memo_attachment": {
+      assertScope(auth, "write:resources");
+      const memoId = getRequiredString(args.memoId, "memoId");
+      const memo = await getMemoDetail(c.env.DB, memoId);
+
+      if (!memo) {
+        throw new AppError("not_found", "Memo not found", 404);
+      }
+
+      const filename = getRequiredString(args.filename, "filename");
+      const bytes = await decodeBase64Data(getRequiredString(args.dataBase64, "dataBase64"));
+      const resource = await createAttachmentResource(c, {
+        memoId,
+        filename,
+        mimeType: getRequiredString(args.mimeType, "mimeType"),
+        bytes,
+        actor: getAuditActor(c),
+      });
+      const label = getOptionalString(args.label) ?? normalizeFilename(filename) ?? "attachment";
+
+      return {
+        resource,
+        markdownLink: `[${escapeMarkdownLinkLabel(label)}](${resource.url})`,
+      };
+    }
+    case "list_memo_resources": {
+      assertScope(auth, "read:resources");
+      const memoId = getRequiredString(args.memoId, "memoId");
+      const memo = await getMemoDetail(c.env.DB, memoId, true);
+
+      if (!memo) {
+        throw new AppError("not_found", "Memo not found", 404);
+      }
+
+      return { resources: await listResourcesForMemo(c.env.DB, memoId) };
+    }
+    case "list_resources": {
+      assertScope(auth, "read:resources");
+      return await listResourcesForMcp(c.env.DB, clampNumber(Number(args.limit ?? 100), 1, 500));
+    }
+    case "list_memo_revisions": {
+      assertScope(auth, "read:memos");
+      return {
+        revisions: await listMemoRevisions(
+          c.env.DB,
+          getRequiredString(args.memoId, "memoId"),
+          clampNumber(Number(args.limit ?? 50), 1, 100)
+        ),
+      };
+    }
+    case "restore_memo_revision": {
+      assertScope(auth, "write:memos");
+      const memoId = getRequiredString(args.memoId, "memoId");
+      const revisionId = getRequiredString(args.revisionId, "revisionId");
+      const revision = await getMemoRevisionRow(c.env.DB, memoId, revisionId);
+
+      if (!revision) {
+        throw new AppError("not_found", "Memo revision not found", 404);
+      }
+
+      if (args.dryRun === true) {
+        return { dryRun: true, revision: mapMemoRevision(revision) };
+      }
+
+      return { memo: await restoreMemoRevisionRecord(c.env.DB, memoId, revisionId, getAuditActor(c), getActorLabel(c)) };
     }
     case "move_notebook": {
       assertScope(auth, "write:notebooks");
@@ -2259,6 +2570,10 @@ const callMcpTool = async (
     case "list_tags": {
       assertScope(auth, "read:tags");
       return { tags: await listTagSummaries(c.env.DB) };
+    }
+    case "get_workspace_stats": {
+      assertScope(auth, "read:memos");
+      return await getWorkspaceStats(c.env.DB);
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
@@ -2318,7 +2633,7 @@ const getRequiredStringArray = (value: unknown, name: string) => {
   return items;
 };
 
-const decodeBase64ImageData = async (value: string) => {
+const decodeBase64Data = async (value: string) => {
   const [, dataUrlPayload] = value.match(/^data:[^;]+;base64,(.+)$/i) ?? [];
   const base64 = (dataUrlPayload ?? value).replace(/\s/g, "");
 
@@ -2333,11 +2648,12 @@ const decodeBase64ImageData = async (value: string) => {
     }
     return new Uint8Array(await response.arrayBuffer());
   } catch (error) {
-    throw new AppError("invalid_params", "dataBase64 must be valid base64 image data: " + (error as Error).message, 400);
+    throw new AppError("invalid_params", "dataBase64 must be valid base64 data: " + (error as Error).message, 400);
   }
 };
 
 const escapeMarkdownImageAlt = (value: string) => value.replace(/[\\[\]]/g, "\\$&");
+const escapeMarkdownLinkLabel = (value: string) => value.replace(/[\\[\]]/g, "\\$&");
 
 const isAuthRequired = async (env: Bindings) => {
   if (env.EDGE_EVER_AUTH_PASSWORD_HASH?.trim()) {
@@ -2937,13 +3253,213 @@ const updateTagAcrossMemos = async (
   return updated;
 };
 
+const previewTagRename = async (db: D1Database, oldTag: string, nextTag: string | null) => {
+  const normalizedOld = normalizeTags([oldTag])[0];
+  const normalizedNext = nextTag === null ? null : normalizeTags([nextTag])[0];
+
+  if (!normalizedOld || normalizedOld === normalizedNext) {
+    return { dryRun: true, updated: 0, changes: [] };
+  }
+
+  const rows = await getMemoRowsByTag(db, normalizedOld);
+  const changes = rows.map((row) => {
+    const currentTags = parseJsonArray(row.tags_json);
+    const nextTags = normalizeTags(
+      currentTags.flatMap((tag) => {
+        if (tag !== normalizedOld) {
+          return [tag];
+        }
+
+        return normalizedNext ? [normalizedNext] : [];
+      })
+    );
+
+    return {
+      memoId: row.id,
+      title: row.title,
+      currentTags,
+      nextTags,
+    };
+  });
+
+  return { dryRun: true, updated: changes.length, changes };
+};
+
+const getMemoRowsByTag = async (db: D1Database, tag: string) => {
+  const rows = await db
+    .prepare(
+      `SELECT m.id, m.title, m.tags_json, c.content_text
+       FROM memos m
+       INNER JOIN memo_contents c ON c.memo_id = m.id
+       WHERE m.is_deleted = 0
+         AND EXISTS (
+           SELECT 1
+           FROM json_each(m.tags_json)
+           WHERE json_each.value = ?
+         )`
+    )
+    .bind(tag)
+    .all<MemoTagUpdateRow>();
+
+  return rows.results;
+};
+
+const updateTagsForMemos = async (
+  db: D1Database,
+  input: {
+    memoIds: string[];
+    tags: string[];
+    mode: "add" | "remove";
+    dryRun: boolean;
+    actor: { actorType: "user" | "agent"; actorId: string | null };
+    actorLabel: string;
+  }
+) => {
+  const memoIds = Array.from(new Set(input.memoIds));
+  const tags = normalizeTags(input.tags);
+
+  if (memoIds.length === 0 || tags.length === 0) {
+    throw new AppError("invalid_params", "memoIds and tags must include at least one item", 400);
+  }
+
+  const placeholders = memoIds.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(
+      `SELECT m.id, m.title, m.tags_json, c.content_text
+       FROM memos m
+       INNER JOIN memo_contents c ON c.memo_id = m.id
+       WHERE m.is_deleted = 0 AND m.id IN (${placeholders})`
+    )
+    .bind(...memoIds)
+    .all<MemoTagUpdateRow>();
+
+  if (rows.results.length !== memoIds.length) {
+    throw new AppError("missing_memos", "One or more memos cannot be updated.", 400);
+  }
+
+  const changes = rows.results
+    .map((row) => {
+      const currentTags = parseJsonArray(row.tags_json);
+      const nextTags =
+        input.mode === "add"
+          ? normalizeTags([...currentTags, ...tags])
+          : currentTags.filter((tag) => !tags.includes(tag));
+
+      return {
+        memoId: row.id,
+        title: row.title,
+        currentTags,
+        nextTags,
+        contentText: row.content_text,
+      };
+    })
+    .filter((change) => JSON.stringify(change.currentTags) !== JSON.stringify(change.nextTags));
+
+  if (input.dryRun) {
+    return {
+      dryRun: true,
+      updated: changes.length,
+      changes: changes.map(({ contentText: _contentText, ...change }) => change),
+    };
+  }
+
+  if (changes.length === 0) {
+    return { ok: true, updated: 0 };
+  }
+
+  const now = isoNow();
+  const statements: D1PreparedStatement[] = [];
+
+  for (const change of changes) {
+    statements.push(
+      db
+        .prepare(
+          `UPDATE memos
+           SET tags_json = ?, updated_by = ?, updated_at = ?
+           WHERE id = ? AND is_deleted = 0`
+        )
+        .bind(JSON.stringify(change.nextTags), input.actorLabel, now, change.memoId),
+      db.prepare(`DELETE FROM memos_fts WHERE memo_id = ?`).bind(change.memoId),
+      db
+        .prepare(
+          `INSERT INTO memos_fts (memo_id, title, content_text, tags)
+           VALUES (?, ?, ?, ?)`
+        )
+        .bind(change.memoId, change.title, change.contentText, change.nextTags.join(" ")),
+      auditStatement(db, input.actor.actorType, input.actor.actorId, input.mode === "add" ? "tag.add" : "tag.remove", "memo", change.memoId, {
+        tags,
+      })
+    );
+  }
+
+  await db.batch(statements);
+  return { ok: true, updated: changes.length };
+};
+
 const searchMemoSummaries = async (
   db: D1Database,
-  options: { query?: string | null; notebookId?: string | null; limit: number }
+  options: {
+    query?: string | null;
+    notebookId?: string | null;
+    tags?: string[];
+    createdAfter?: string | null;
+    createdBefore?: string | null;
+    updatedAfter?: string | null;
+    updatedBefore?: string | null;
+    isPinned?: boolean | null;
+    hasResources?: boolean | null;
+    limit: number;
+  }
 ): Promise<MemoSummary[]> => {
   const q = options.query?.trim();
   const notebookId = options.notebookId?.trim() || null;
+  const tags = normalizeTags(options.tags ?? []);
   const limit = clampNumber(options.limit, 1, 100);
+  const filters = ["m.is_deleted = 0"];
+  const binds: unknown[] = [];
+
+  if (notebookId) {
+    filters.push("m.notebook_id = ?");
+    binds.push(notebookId);
+  }
+
+  for (const tag of tags) {
+    filters.push("EXISTS (SELECT 1 FROM json_each(m.tags_json) WHERE json_each.value = ?)");
+    binds.push(tag);
+  }
+
+  if (options.createdAfter) {
+    filters.push("m.created_at >= ?");
+    binds.push(options.createdAfter);
+  }
+
+  if (options.createdBefore) {
+    filters.push("m.created_at <= ?");
+    binds.push(options.createdBefore);
+  }
+
+  if (options.updatedAfter) {
+    filters.push("m.updated_at >= ?");
+    binds.push(options.updatedAfter);
+  }
+
+  if (options.updatedBefore) {
+    filters.push("m.updated_at <= ?");
+    binds.push(options.updatedBefore);
+  }
+
+  if (options.isPinned !== null && options.isPinned !== undefined) {
+    filters.push("m.is_pinned = ?");
+    binds.push(options.isPinned ? 1 : 0);
+  }
+
+  if (options.hasResources !== null && options.hasResources !== undefined) {
+    filters.push(
+      options.hasResources
+        ? "EXISTS (SELECT 1 FROM resources r WHERE r.memo_id = m.id AND r.is_deleted = 0)"
+        : "NOT EXISTS (SELECT 1 FROM resources r WHERE r.memo_id = m.id AND r.is_deleted = 0)"
+    );
+  }
 
   if (q) {
     const ftsQuery = toFtsQuery(q);
@@ -2977,12 +3493,11 @@ const searchMemoSummaries = async (
            FROM search_matches s
            INNER JOIN memos m ON m.id = s.memo_id
            INNER JOIN memo_contents c ON c.memo_id = m.id
-           WHERE m.is_deleted = 0
-             AND (? IS NULL OR m.notebook_id = ?)
+           WHERE ${filters.join(" AND ")}
            ORDER BY s.rank ASC, m.is_pinned DESC, m.updated_at DESC
            LIMIT ?`
         )
-        .bind(ftsQuery, likeQuery, likeQuery, likeQuery, notebookId, notebookId, limit)
+        .bind(ftsQuery, likeQuery, likeQuery, likeQuery, ...binds, limit)
         .all<MemoSummaryRow>();
 
       return rows.results.map(mapMemoSummary);
@@ -2996,12 +3511,11 @@ const searchMemoSummaries = async (
               c.content_text
        FROM memos m
        INNER JOIN memo_contents c ON c.memo_id = m.id
-       WHERE m.is_deleted = 0
-         AND (? IS NULL OR m.notebook_id = ?)
+       WHERE ${filters.join(" AND ")}
        ORDER BY m.is_pinned DESC, m.updated_at DESC
        LIMIT ?`
     )
-    .bind(notebookId, notebookId, limit)
+    .bind(...binds, limit)
     .all<MemoSummaryRow>();
 
   return rows.results.map(mapMemoSummary);
@@ -3009,12 +3523,13 @@ const searchMemoSummaries = async (
 
 const listMemosForMcp = async (
   db: D1Database,
-  options: { notebookId?: string | null; limit: number; offset: number; includeContent: boolean }
+  options: { notebookId?: string | null; limit: number; offset: number; includeContent: boolean; includeDeleted: boolean }
 ) => {
   const notebookId = options.notebookId?.trim() || null;
   const limit = clampNumber(options.limit, 1, 100);
   const offset = clampNumber(options.offset, 0, 100_000);
   const pageSize = limit + 1;
+  const deletedFilter = options.includeDeleted ? "1 = 1" : "m.is_deleted = 0";
 
   if (options.includeContent) {
     const rows = await db
@@ -3025,7 +3540,7 @@ const listMemosForMcp = async (
                 m.source_memo_ids, m.merge_source_count, m.merged_into_memo_id
          FROM memos m
          INNER JOIN memo_contents c ON c.memo_id = m.id
-         WHERE m.is_deleted = 0
+         WHERE ${deletedFilter}
            AND (? IS NULL OR m.notebook_id = ?)
          ORDER BY m.updated_at DESC, m.id ASC
          LIMIT ? OFFSET ?`
@@ -3050,7 +3565,7 @@ const listMemosForMcp = async (
               c.content_text
        FROM memos m
        INNER JOIN memo_contents c ON c.memo_id = m.id
-       WHERE m.is_deleted = 0
+       WHERE ${deletedFilter}
          AND (? IS NULL OR m.notebook_id = ?)
        ORDER BY m.updated_at DESC, m.id ASC
        LIMIT ? OFFSET ?`
@@ -3305,6 +3820,115 @@ const deleteMemosRecord = async (
     for (const memoId of uniqueMemoIds) {
       statements.push(auditStatement(db, actor.actorType, actor.actorId, "memo.delete", "memo", memoId, {}));
     }
+  }
+
+  await db.batch(statements);
+  return uniqueMemoIds.length;
+};
+
+const getMemosForBulkAction = async (db: D1Database, memoIds: string[], deletedState: 0 | 1) => {
+  const uniqueMemoIds = Array.from(new Set(memoIds));
+
+  if (uniqueMemoIds.length === 0) {
+    return [];
+  }
+
+  const placeholders = uniqueMemoIds.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(
+      `SELECT m.id, m.notebook_id, m.title, m.excerpt, m.tags_json, m.is_pinned,
+              m.is_archived, m.is_deleted, m.created_at, m.updated_at, m.deleted_at, c.revision,
+              c.content_text
+       FROM memos m
+       INNER JOIN memo_contents c ON c.memo_id = m.id
+       WHERE m.is_deleted = ?
+         AND m.id IN (${placeholders})
+       ORDER BY m.updated_at DESC, m.id ASC`
+    )
+    .bind(deletedState, ...uniqueMemoIds)
+    .all<MemoSummaryRow>();
+
+  if (rows.results.length !== uniqueMemoIds.length) {
+    throw new AppError("missing_memos", "One or more memos cannot be found for this action in the expected state.", 400);
+  }
+
+  return rows.results.map(mapMemoSummary);
+};
+
+const restoreMemosRecord = async (
+  db: D1Database,
+  memoIds: string[],
+  actor: { actorType: "user" | "agent"; actorId: string | null }
+) => {
+  const uniqueMemoIds = Array.from(new Set(memoIds));
+
+  if (uniqueMemoIds.length === 0) {
+    return 0;
+  }
+
+  const placeholders = uniqueMemoIds.map(() => "?").join(", ");
+  const rows = await db
+    .prepare(
+      `SELECT m.id, m.notebook_id, m.title, m.tags_json, c.content_text
+       FROM memos m
+       INNER JOIN memo_contents c ON c.memo_id = m.id
+       WHERE m.is_deleted = 1 AND m.id IN (${placeholders})`
+    )
+    .bind(...uniqueMemoIds)
+    .all<{ id: string; notebook_id: string; title: string | null; tags_json: string; content_text: string }>();
+
+  if (rows.results.length !== uniqueMemoIds.length) {
+    throw new AppError("missing_memos", "One or more memos cannot be restored.", 400);
+  }
+
+  const notebookIds = Array.from(new Set(rows.results.map((row) => row.notebook_id)));
+  const notebookPlaceholders = notebookIds.map(() => "?").join(", ");
+  const notebookRows = await db
+    .prepare(`SELECT id FROM notebooks WHERE is_deleted = 0 AND id IN (${notebookPlaceholders})`)
+    .bind(...notebookIds)
+    .all<{ id: string }>();
+  const activeNotebookIds = new Set(notebookRows.results.map((row) => row.id));
+
+  const needsInbox = rows.results.some((row) => !activeNotebookIds.has(row.notebook_id));
+
+  if (needsInbox && !(await getNotebook(db, "nb_inbox"))) {
+    throw new AppError("restore_notebook_missing", "Original notebooks were deleted and the default inbox is unavailable.", 409);
+  }
+
+  const now = isoNow();
+  const statements: D1PreparedStatement[] = [];
+
+  for (const row of rows.results) {
+    const restoreNotebookId = activeNotebookIds.has(row.notebook_id) ? row.notebook_id : "nb_inbox";
+    const tags = parseJsonArray(row.tags_json);
+
+    statements.push(
+      db
+        .prepare(
+          `UPDATE memos
+           SET notebook_id = ?, is_deleted = 0, deleted_at = NULL, updated_at = ?
+           WHERE id = ? AND is_deleted = 1`
+        )
+        .bind(restoreNotebookId, now, row.id),
+      db
+        .prepare(
+          `UPDATE resources
+           SET is_deleted = 0, deleted_at = NULL, updated_at = ?
+           WHERE memo_id = ? AND is_deleted = 1`
+        )
+        .bind(now, row.id),
+      db.prepare(`DELETE FROM memos_fts WHERE memo_id = ?`).bind(row.id),
+      db
+        .prepare(
+          `INSERT INTO memos_fts (memo_id, title, content_text, tags)
+           VALUES (?, ?, ?, ?)`
+        )
+        .bind(row.id, row.title, row.content_text, tags.join(" ")),
+      auditStatement(db, actor.actorType, actor.actorId, "memo.restore", "memo", row.id, {
+        fromNotebookId: row.notebook_id,
+        toNotebookId: restoreNotebookId,
+      })
+    );
   }
 
   await db.batch(statements);
@@ -3919,6 +4543,97 @@ const getMemoRevisionRow = async (
     .bind(revisionId, memoId)
     .first<MemoRevisionRow>();
 
+const listMemoRevisions = async (db: D1Database, memoId: string, limit: number): Promise<MemoRevision[]> => {
+  const memo = await getMemoDetail(db, memoId, true);
+
+  if (!memo) {
+    throw new AppError("not_found", "Memo not found", 404);
+  }
+
+  const rows = await db
+    .prepare(
+      `SELECT id, memo_id, revision, title, tags_json, content_json, content_markdown,
+              content_text, content_hash, created_by, created_at
+       FROM memo_revisions
+       WHERE memo_id = ?
+       ORDER BY revision DESC, created_at DESC
+       LIMIT ?`
+    )
+    .bind(memoId, limit)
+    .all<MemoRevisionRow>();
+
+  return rows.results.map(mapMemoRevision);
+};
+
+const restoreMemoRevisionRecord = async (
+  db: D1Database,
+  memoId: string,
+  revisionId: string,
+  actor: { actorType: "user" | "agent"; actorId: string | null },
+  actorLabel: string
+) => {
+  const current = await getMemoDetailRow(db, memoId);
+
+  if (!current) {
+    throw new AppError("not_found", "Memo not found", 404);
+  }
+
+  const revision = await getMemoRevisionRow(db, memoId, revisionId);
+
+  if (!revision) {
+    throw new AppError("not_found", "Memo revision not found", 404);
+  }
+
+  const tags = parseJsonArray(revision.tags_json);
+  const contentJson = parseDoc(revision.content_json);
+  const contentMarkdown = revision.content_markdown || docToMarkdown(contentJson);
+  const contentText = revision.content_text || docToText(contentJson);
+  const title = normalizeMemoTitle(revision.title);
+  const excerpt = createExcerpt(contentText);
+  const contentHash = await sha256(contentMarkdown + JSON.stringify(contentJson));
+  const nextRevision = current.revision + 1;
+  const now = isoNow();
+
+  await db.batch([
+    createMemoRevisionStatement(db, current, actorLabel, now),
+    db
+      .prepare(
+        `UPDATE memos
+         SET title = ?, excerpt = ?, tags_json = ?, updated_by = ?, updated_at = ?
+         WHERE id = ? AND is_deleted = 0`
+      )
+      .bind(title, excerpt, JSON.stringify(tags), actorLabel, now, memoId),
+    db
+      .prepare(
+        `UPDATE memo_contents
+         SET content_json = ?, content_markdown = ?, content_text = ?, content_hash = ?,
+             revision = ?, updated_at = ?
+         WHERE memo_id = ?`
+      )
+      .bind(JSON.stringify(contentJson), contentMarkdown, contentText, contentHash, nextRevision, now, memoId),
+    db.prepare(`DELETE FROM memos_fts WHERE memo_id = ?`).bind(memoId),
+    db
+      .prepare(
+        `INSERT INTO memos_fts (memo_id, title, content_text, tags)
+         VALUES (?, ?, ?, ?)`
+      )
+      .bind(memoId, title, contentText, tags.join(" ")),
+    auditStatement(db, actor.actorType, actor.actorId, "memo.revision_restore", "memo", memoId, {
+      revisionId,
+      restoredRevision: revision.revision,
+      revision: nextRevision,
+    }),
+  ]);
+
+  const memo = await getMemoDetail(db, memoId);
+
+  if (!memo) {
+    throw new AppError("not_found", "Memo not found after revision restore", 404);
+  }
+
+  return memo;
+};
+
 const getLatestMemoRevisionRow = async (db: D1Database, memoId: string): Promise<MemoRevisionRow | null> =>
   db
     .prepare(
@@ -4017,6 +4732,106 @@ const getResourceRowsForMemo = async (db: D1Database, memoId: string): Promise<R
     .all<ResourceRow>();
 
   return rows.results;
+};
+
+const listResourcesForMemo = async (db: D1Database, memoId: string): Promise<Resource[]> => {
+  const rows = await db
+    .prepare(
+      `SELECT id, memo_id, original_memo_id, bucket_name, object_key, kind, mime_type,
+              filename, byte_size, sha256, width, height, created_at, updated_at
+       FROM resources
+       WHERE memo_id = ? AND is_deleted = 0
+       ORDER BY created_at ASC, id ASC`
+    )
+    .bind(memoId)
+    .all<ResourceRow>();
+
+  return rows.results.map(mapResource);
+};
+
+const listResourcesForMcp = async (db: D1Database, limit: number) => {
+  const [rows, stats] = await Promise.all([
+    db
+      .prepare(
+        `SELECT r.id, r.memo_id, r.original_memo_id, r.bucket_name, r.object_key, r.kind,
+                r.mime_type, r.filename, r.byte_size, r.sha256, r.width, r.height,
+                r.created_at, r.updated_at, m.title AS memo_title, m.excerpt AS memo_excerpt,
+                m.is_deleted AS memo_is_deleted
+         FROM resources r
+         LEFT JOIN memos m ON m.id = r.memo_id
+         WHERE r.is_deleted = 0
+         ORDER BY r.created_at DESC
+         LIMIT ?`
+      )
+      .bind(limit)
+      .all<ResourceListRow>(),
+    db
+      .prepare(
+        `SELECT COUNT(*) AS total_count,
+                COALESCE(SUM(byte_size), 0) AS total_bytes,
+                COALESCE(SUM(CASE WHEN kind = 'image' THEN 1 ELSE 0 END), 0) AS image_count,
+                COALESCE(SUM(CASE WHEN kind = 'attachment' THEN 1 ELSE 0 END), 0) AS attachment_count
+         FROM resources
+         WHERE is_deleted = 0`
+      )
+      .first<ResourceStatsRow>(),
+  ]);
+
+  return {
+    resources: rows.results.map(mapResourceListItem),
+    summary: mapResourceStorageSummary(stats),
+  };
+};
+
+const getWorkspaceStats = async (db: D1Database) => {
+  const [memoCounts, notebookCount, tagCount, resourceStats] = await Promise.all([
+    db
+      .prepare(
+        `SELECT
+           COUNT(*) AS total,
+           COALESCE(SUM(CASE WHEN is_deleted = 0 THEN 1 ELSE 0 END), 0) AS active,
+           COALESCE(SUM(CASE WHEN is_deleted = 1 THEN 1 ELSE 0 END), 0) AS trashed,
+           COALESCE(SUM(CASE WHEN is_deleted = 0 AND is_pinned = 1 THEN 1 ELSE 0 END), 0) AS pinned,
+           COALESCE(SUM(CASE WHEN is_deleted = 0 AND tags_json = '[]' THEN 1 ELSE 0 END), 0) AS untagged
+         FROM memos`
+      )
+      .first<{ total: number; active: number; trashed: number; pinned: number; untagged: number }>(),
+    db.prepare(`SELECT COUNT(*) AS count FROM notebooks WHERE is_deleted = 0`).first<{ count: number }>(),
+    db
+      .prepare(
+        `SELECT COUNT(DISTINCT json_each.value) AS count
+         FROM memos m, json_each(m.tags_json)
+         WHERE m.is_deleted = 0 AND trim(json_each.value) <> ''`
+      )
+      .first<{ count: number }>(),
+    db
+      .prepare(
+        `SELECT COUNT(*) AS total_count,
+                COALESCE(SUM(byte_size), 0) AS total_bytes,
+                COALESCE(SUM(CASE WHEN kind = 'image' THEN 1 ELSE 0 END), 0) AS image_count,
+                COALESCE(SUM(CASE WHEN kind = 'attachment' THEN 1 ELSE 0 END), 0) AS attachment_count
+         FROM resources
+         WHERE is_deleted = 0`
+      )
+      .first<ResourceStatsRow>(),
+  ]);
+
+  return {
+    memos: {
+      total: memoCounts?.total ?? 0,
+      active: memoCounts?.active ?? 0,
+      trashed: memoCounts?.trashed ?? 0,
+      pinned: memoCounts?.pinned ?? 0,
+      untagged: memoCounts?.untagged ?? 0,
+    },
+    notebooks: {
+      active: notebookCount?.count ?? 0,
+    },
+    tags: {
+      active: tagCount?.count ?? 0,
+    },
+    resources: mapResourceStorageSummary(resourceStats),
+  };
 };
 
 const parseJsonArray = (json: string): string[] => {
