@@ -18,6 +18,7 @@ import {
   RefreshCw,
   CheckCircle2,
   CircleUserRound,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +42,7 @@ import {
   readNotebookSortPreference,
   writeNotebookSortPreference,
 } from "@/lib/app-helpers";
+import { usePwaInstall } from "./PwaInstallContext";
 
 const NOTEBOOK_DRAG_SCROLL_EDGE_PX = 56;
 const NOTEBOOK_DRAG_SCROLL_MAX_STEP_PX = 18;
@@ -250,6 +252,7 @@ export const NotebookPane = ({
   isLoggingOut: boolean;
 }) => {
   const { t } = useTranslation();
+  const { isInstallable, install } = usePwaInstall();
   const notebookScrollRef = useRef<HTMLDivElement | null>(null);
   const notebookDragScrollFrameRef = useRef<number | null>(null);
   const [expandSiblingsRequest, setExpandSiblingsRequest] = useState<{ parentId: string | null; token: number } | null>(null);
@@ -463,7 +466,21 @@ export const NotebookPane = ({
       </div>
 
       <footer className="border-t border-slate-200 bg-white/80 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-sm">
-        <div>
+        <div className="space-y-1">
+          {isInstallable && (
+            <button
+              onClick={install}
+              className="flex h-8 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold leading-none text-emerald-700 hover:bg-emerald-50 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+              type="button"
+              title={t("pwa.sidebarInstallTitle") || "安装桌面客户端"}
+              aria-label={t("pwa.sidebarInstallTitle") || "安装桌面客户端"}
+            >
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                <Download className="h-4 w-4 text-emerald-600" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">{t("pwa.sidebarInstall") || "安装桌面客户端"}</span>
+            </button>
+          )}
           <button
             onClick={onOpenSettings}
             className="flex h-8 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium leading-none text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/70"
