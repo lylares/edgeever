@@ -2,12 +2,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import type { MemoFilterMode, MemoSortMode } from "@edgeever/client";
 import {
+  Archive,
   BookOpen,
   Check,
+  ExternalLink,
   FileText,
   Folder,
+  HardDrive,
   History,
   Home,
+  Image as ImageIcon,
   LogOut,
   Merge,
   Pencil,
@@ -26,6 +30,8 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image as RNImage,
+  Linking,
   Modal,
   Pressable,
   RefreshControl,
@@ -36,7 +42,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { MemoDetail, MemoRevision, MemoSummary, Notebook, TagSummary } from "@edgeever/shared";
+import type { MemoDetail, MemoRevision, MemoSummary, Notebook, ResourceListItem, TagSummary } from "@edgeever/shared";
 import { useSession } from "../lib/session";
 
 const ALL_NOTES_ID = "all";
@@ -59,6 +65,7 @@ export const WorkspaceScreen = () => {
   const [editingMemo, setEditingMemo] = useState<MemoDetail | null>(null);
   const [notebookManagerOpen, setNotebookManagerOpen] = useState(false);
   const [tagsManagerOpen, setTagsManagerOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
   const [revisionMemo, setRevisionMemo] = useState<MemoDetail | null>(null);
   const [selectedMemoIds, setSelectedMemoIds] = useState<Set<string>>(() => new Set());
   const [selectionMoveOpen, setSelectionMoveOpen] = useState(false);
@@ -417,6 +424,7 @@ export const WorkspaceScreen = () => {
           notebookCount={notebooks.length}
           memoCount={memoCount}
           onOpenNotebookManager={() => setNotebookManagerOpen(true)}
+          onOpenResources={() => setResourcesOpen(true)}
           onOpenTagsManager={() => setTagsManagerOpen(true)}
         />
       ) : null}
@@ -430,6 +438,7 @@ export const WorkspaceScreen = () => {
         onClose={closeDetail}
         onDelete={handleDeleteMemo}
         onEdit={setEditingMemo}
+        onOpenResources={() => setResourcesOpen(true)}
         onOpenRevisions={setRevisionMemo}
         onRestore={(memo) => restoreMemoMutation.mutate(memo)}
         onTogglePin={handleTogglePin}
@@ -449,6 +458,7 @@ export const WorkspaceScreen = () => {
 
       <NotebookManagerModal notebooks={notebooks} onClose={() => setNotebookManagerOpen(false)} visible={notebookManagerOpen} />
       <TagsManagerModal onClose={() => setTagsManagerOpen(false)} visible={tagsManagerOpen} />
+      <ResourcesModal activeMemo={selectedMemo} onClose={() => setResourcesOpen(false)} visible={resourcesOpen} />
       <RevisionHistoryModal
         memo={revisionMemo}
         onClose={() => setRevisionMemo(null)}
@@ -751,11 +761,13 @@ const SettingsView = ({
   memoCount,
   notebookCount,
   onOpenNotebookManager,
+  onOpenResources,
   onOpenTagsManager,
 }: {
   memoCount: number;
   notebookCount: number;
   onOpenNotebookManager: () => void;
+  onOpenResources: () => void;
   onOpenTagsManager: () => void;
 }) => (
   <ScrollView contentContainerStyle={styles.panelList} style={styles.viewBody}>
@@ -765,6 +777,9 @@ const SettingsView = ({
     </Pressable>
     <Pressable onPress={onOpenTagsManager}>
       <PanelRow label="标签管理" value="重命名、删除标签" />
+    </Pressable>
+    <Pressable onPress={onOpenResources}>
+      <PanelRow label="资源库" value="图片、附件、来源笔记" />
     </Pressable>
     <PanelRow label="移动端形态" value="React Native" />
     <PanelRow label="笔记本数量" value={String(notebookCount)} />
@@ -1199,6 +1214,229 @@ const TagsManagerModal = ({ onClose, visible }: { onClose: () => void; visible: 
   );
 };
 
+type ResourceFilter = "all" | "image" | "document" | "other";
+
+const DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "text/markdown",
+  "application/json",
+  "application/xml",
+  "text/html",
+  "text/css",
+  "text/javascript",
+]);
+
+const ResourcesModal = ({
+  activeMemo,
+  onClose,
+  visible,
+}: {
+  activeMemo: MemoDetail | null;
+  onClose: () => void;
+  visible: boolean;
+}) => {
+  const { client } = useSession();
+  const [searchText, setSearchText] = useState("");
+  const [filter, setFilter] = useState<ResourceFilter>("all");
+  const [previewResource, setPreviewResource] = useState<ResourceListItem | null>(null);
+
+  const resourcesQuery = useQuery({
+    queryKey: ["mobile", "resources"],
+    queryFn: async () => {
+      if (!client) {
+        throw new Error("Client is not ready");
+      }
+
+      return client.listResources();
+    },
+    enabled: Boolean(client && visible),
+  });
+
+  const resources = resourcesQuery.data?.resources ?? [];
+  const summary = resourcesQuery.data?.summary ?? {
+    totalCount: 0,
+    totalBytes: 0,
+    imageCount: 0,
+    attachmentCount: 0,
+  };
+  const filteredResources = resources.filter((resource) => {
+    const isDocument = isDocumentResource(resource);
+
+    if (filter === "image" && resource.kind !== "image") {
+      return false;
+    }
+
+    if (filter === "document" && (!isDocument || resource.kind === "image")) {
+      return false;
+    }
+
+    if (filter === "other" && (resource.kind === "image" || isDocument)) {
+      return false;
+    }
+
+    const query = searchText.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      (resource.filename || "").toLowerCase().includes(query) ||
+      (resource.memoTitle || "").toLowerCase().includes(query) ||
+      (resource.memoExcerpt || "").toLowerCase().includes(query)
+    );
+  });
+
+  return (
+    <Modal animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet" visible={visible}>
+      <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalHeader}>
+          <IconButton onPress={onClose}>
+            <X color="#0f172a" size={20} />
+          </IconButton>
+          <Text style={styles.modalTitle}>资源库</Text>
+          <IconButton onPress={() => resourcesQuery.refetch()}>
+            {resourcesQuery.isFetching ? <ActivityIndicator color="#0f172a" /> : <RefreshCw color="#0f172a" size={18} />}
+          </IconButton>
+        </View>
+
+        <View style={styles.assetsToolbar}>
+          <View style={styles.assetsSummary}>
+            <Archive color="#047857" size={18} />
+            <Text style={styles.assetsSummaryText}>{summary.totalCount} 个文件</Text>
+            <Text style={styles.assetsSummaryMeta}>{formatBytes(summary.totalBytes)}</Text>
+          </View>
+          <View style={styles.assetsSummary}>
+            <ImageIcon color="#64748b" size={16} />
+            <Text style={styles.assetsSummaryMeta}>{summary.imageCount} 张图片</Text>
+            <HardDrive color="#64748b" size={16} />
+            <Text style={styles.assetsSummaryMeta}>{summary.attachmentCount} 个附件</Text>
+          </View>
+
+          <View style={styles.searchBox}>
+            <Search color="#64748b" size={18} />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={setSearchText}
+              placeholder="搜索文件名或来源笔记"
+              placeholderTextColor="#94a3b8"
+              style={styles.searchInput}
+              value={searchText}
+            />
+            {searchText ? (
+              <Pressable onPress={() => setSearchText("")}>
+                <X color="#64748b" size={18} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <OptionPill active={filter === "all"} label="全部" onPress={() => setFilter("all")} />
+            <OptionPill active={filter === "image"} label="图片" onPress={() => setFilter("image")} />
+            <OptionPill active={filter === "document"} label="文档" onPress={() => setFilter("document")} />
+            <OptionPill active={filter === "other"} label="其他" onPress={() => setFilter("other")} />
+          </ScrollView>
+
+          <Text style={styles.assetsHint}>
+            {activeMemo ? `当前笔记：${activeMemo.title?.trim() || activeMemo.excerpt || DEFAULT_MEMO_TITLE}` : "打开一条笔记后可作为资源上传目标"}
+          </Text>
+        </View>
+
+        {resourcesQuery.isLoading ? (
+          <View style={styles.centerState}>
+            <ActivityIndicator color="#0f172a" />
+          </View>
+        ) : filteredResources.length === 0 ? (
+          <View style={styles.centerState}>
+            <Archive color="#94a3b8" size={32} />
+            <Text style={styles.emptyTitle}>{searchText || filter !== "all" ? "没有匹配资源" : "资源库为空"}</Text>
+            <Text style={styles.mutedText}>{searchText || filter !== "all" ? "调整筛选条件后再试" : "PWA 上传的图片和附件会显示在这里"}</Text>
+          </View>
+        ) : (
+          <FlatList
+            contentContainerStyle={styles.assetList}
+            data={filteredResources}
+            keyExtractor={(resource) => resource.id}
+            renderItem={({ item }) => <ResourceCard resource={item} onOpen={() => openResource(item)} onPreview={() => setPreviewResource(item)} />}
+            refreshControl={<RefreshControl onRefresh={() => resourcesQuery.refetch()} refreshing={resourcesQuery.isFetching} tintColor="#0f172a" />}
+          />
+        )}
+
+        <ImagePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
+      </SafeAreaView>
+    </Modal>
+  );
+};
+
+const ResourceCard = ({
+  onOpen,
+  onPreview,
+  resource,
+}: {
+  onOpen: () => void;
+  onPreview: () => void;
+  resource: ResourceListItem;
+}) => {
+  const source = resource.memoDeleted ? "已删除笔记" : resource.memoTitle || resource.memoExcerpt || resource.memoId;
+  const isImage = resource.kind === "image";
+
+  return (
+    <Pressable onPress={isImage ? onPreview : onOpen} style={styles.resourceCard}>
+      <View style={styles.resourceThumb}>
+        {isImage ? (
+          <RNImage source={{ uri: resource.url }} style={styles.resourceImage} />
+        ) : (
+          <View style={styles.resourceFileIcon}>{getResourceIcon(resource)}</View>
+        )}
+      </View>
+      <View style={styles.resourceInfo}>
+        <Text numberOfLines={1} style={styles.memoTitle}>
+          {resource.filename || resource.id}
+        </Text>
+        <Text numberOfLines={1} style={styles.panelLabel}>
+          {formatBytes(resource.byteSize)} · {resource.mimeType?.split("/")[1] || resource.kind} · {formatDate(resource.createdAt)}
+        </Text>
+        <Text numberOfLines={1} style={styles.panelLabel}>
+          来源：{source}
+        </Text>
+      </View>
+      <Pressable onPress={onOpen} style={styles.secondaryIconButton}>
+        <ExternalLink color="#0f172a" size={16} />
+      </Pressable>
+    </Pressable>
+  );
+};
+
+const ImagePreviewModal = ({ onClose, resource }: { onClose: () => void; resource: ResourceListItem | null }) => (
+  <Modal animationType="fade" transparent visible={Boolean(resource)} onRequestClose={onClose}>
+    <View style={styles.previewBackdrop}>
+      <View style={styles.previewHeader}>
+        <Text numberOfLines={1} style={styles.previewTitle}>
+          {resource?.filename || "图片预览"}
+        </Text>
+        <IconButton onPress={onClose}>
+          <X color="#0f172a" size={20} />
+        </IconButton>
+      </View>
+      {resource ? <RNImage resizeMode="contain" source={{ uri: resource.url }} style={styles.previewImage} /> : null}
+      {resource ? (
+        <Pressable onPress={() => openResource(resource)} style={styles.previewOpenButton}>
+          <ExternalLink color="#ffffff" size={18} />
+          <Text style={styles.previewOpenText}>打开原文件</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  </Modal>
+);
+
 const RevisionHistoryModal = ({
   memo,
   onClose,
@@ -1351,6 +1589,7 @@ const MemoDetailModal = ({
   onClose,
   onDelete,
   onEdit,
+  onOpenResources,
   onOpenRevisions,
   onRestore,
   onTogglePin,
@@ -1364,6 +1603,7 @@ const MemoDetailModal = ({
   onClose: () => void;
   onDelete: (memo: MemoDetail) => void;
   onEdit: (memo: MemoDetail) => void;
+  onOpenResources: () => void;
   onOpenRevisions: (memo: MemoDetail) => void;
   onRestore: (memo: MemoDetail) => void;
   onTogglePin: (memo: MemoDetail) => void;
@@ -1407,6 +1647,9 @@ const MemoDetailModal = ({
                 </ActionButton>
                 <ActionButton label="历史" onPress={() => onOpenRevisions(memo)}>
                   <History color="#0f172a" size={16} />
+                </ActionButton>
+                <ActionButton label="资源" onPress={onOpenResources}>
+                  <Archive color="#0f172a" size={16} />
                 </ActionButton>
               </>
             )}
@@ -1861,6 +2104,36 @@ const formatDate = (value: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 
+const formatBytes = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / 1024 ** exponent;
+
+  return `${exponent === 0 ? value.toFixed(0) : value.toFixed(value >= 10 ? 1 : 2)} ${units[exponent]}`;
+};
+
+const isDocumentResource = (resource: ResourceListItem) => DOCUMENT_MIME_TYPES.has(resource.mimeType || "") || resource.kind === "attachment";
+
+const getResourceIcon = (resource: ResourceListItem) => {
+  const mime = (resource.mimeType || "").toLowerCase();
+
+  if (mime.startsWith("image/")) {
+    return <ImageIcon color="#10b981" size={28} />;
+  }
+
+  return <FileText color={mime === "application/pdf" ? "#dc2626" : "#2563eb"} size={28} />;
+};
+
+const openResource = (resource: ResourceListItem) => {
+  Linking.openURL(resource.url).catch(() => {
+    Alert.alert("无法打开资源", "系统没有可用应用打开此链接。");
+  });
+};
+
 const countChangedLines = (left: string, right: string) => {
   const leftLines = left.split("\n");
   const rightLines = right.split("\n");
@@ -2004,6 +2277,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 44,
   },
+  assetsToolbar: {
+    backgroundColor: "#ffffff",
+    borderBottomColor: "#e2e8f0",
+    borderBottomWidth: 1,
+    gap: 10,
+    padding: 14,
+  },
+  assetsSummary: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  assetsSummaryText: {
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  assetsSummaryMeta: {
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  assetsHint: {
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
   sectionTitle: {
     color: "#0f172a",
     fontSize: 21,
@@ -2073,6 +2375,10 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 22,
     paddingHorizontal: 18,
+  },
+  assetList: {
+    padding: 18,
+    paddingBottom: 48,
   },
   emptyList: {
     flexGrow: 1,
@@ -2152,6 +2458,41 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     paddingHorizontal: 7,
     paddingVertical: 3,
+  },
+  resourceCard: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 10,
+    padding: 10,
+  },
+  resourceThumb: {
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 58,
+    justifyContent: "center",
+    overflow: "hidden",
+    width: 58,
+  },
+  resourceImage: {
+    height: "100%",
+    width: "100%",
+  },
+  resourceFileIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resourceInfo: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
   },
   centerState: {
     alignItems: "center",
@@ -2494,5 +2835,53 @@ const styles = StyleSheet.create({
   },
   bottomNavTextActive: {
     color: "#0f172a",
+  },
+  previewBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.92)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 16,
+  },
+  previewHeader: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    flexDirection: "row",
+    gap: 12,
+    left: 16,
+    padding: 10,
+    position: "absolute",
+    right: 16,
+    top: 54,
+    zIndex: 2,
+  },
+  previewTitle: {
+    color: "#0f172a",
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  previewImage: {
+    height: "72%",
+    width: "100%",
+  },
+  previewOpenButton: {
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderColor: "rgba(255, 255, 255, 0.22)",
+    borderRadius: 8,
+    borderWidth: 1,
+    bottom: 42,
+    flexDirection: "row",
+    gap: 8,
+    minHeight: 46,
+    paddingHorizontal: 16,
+    position: "absolute",
+  },
+  previewOpenText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
