@@ -1699,6 +1699,33 @@ const AccountView = ({ instance, userName, onSignOut }: { instance: string; user
   );
 };
 
+const AccountInfoCopyRow = ({ instance, userName }: { instance: string; userName: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyAccountInfo = async () => {
+    const accountInfo = [
+      `当前用户: ${userName}`,
+      `实例地址: ${instance || "未连接"}`,
+      `移动端版本: v${MOBILE_APP_VERSION}`,
+      `GitHub 仓库: ${GITHUB_REPOSITORY_URL}`,
+    ].join("\n");
+
+    await Clipboard.setStringAsync(accountInfo);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <Pressable accessibilityRole="button" onPress={copyAccountInfo} style={[styles.panelRow, styles.panelLinkRow]}>
+      <View style={styles.panelLinkText}>
+        <Text style={styles.panelLabel}>账户信息</Text>
+        <Text style={styles.panelValue}>{copied ? "已复制" : "复制当前连接信息"}</Text>
+      </View>
+      {copied ? <ShieldCheck color="#047857" size={18} /> : <Copy color="#0f172a" size={18} />}
+    </Pressable>
+  );
+};
+
 const SettingsView = ({
   imageCompressionEnabled,
   instance,
@@ -1750,6 +1777,7 @@ const SettingsView = ({
     <Text style={styles.sectionTitle}>我的</Text>
     <PanelRow label="当前用户" value={userName} />
     <PanelRow label="实例地址" value={instance} />
+    <AccountInfoCopyRow instance={instance} userName={userName} />
     <Pressable onPress={onOpenNotebookManager}>
       <PanelRow label="笔记本管理" value="创建、重命名、删除" />
     </Pressable>
