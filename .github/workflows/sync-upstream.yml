@@ -1,0 +1,58 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Daily at 04:00 UTC (12:00 Beijing time)
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync from tianma-if/edgeever
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync upstream main into fork main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git remote add upstream "https://github.com/tianma-if/edgeever.git" 2>/dev/null || git remote set-url upstream "https://github.com/tianma-if/edgeever.git"
+          git fetch upstream main
+          git checkout main
+          BEFORE="$(git rev-parse HEAD)"
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Fork main already contains upstream/main; nothing to sync."
+            exit 0
+          fi
+          if git merge --ff-only upstream/main; then
+            echo "Fast-forwarded to upstream/main."
+          else
+            echo "Fast-forward not possible; creating merge commit."
+            git merge --no-edit upstream/main
+          fi
+          AFTER="$(git rev-parse HEAD)"
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "No new commits after sync."
+            exit 0
+          fi
+          git push origin main
+          echo "Synced and pushed: $BEFORE -> $AFTER"
