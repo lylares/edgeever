@@ -108,6 +108,7 @@ const TagsDialog = lazy(() => import("./dialogs/TagsDialog").then((module) => ({
 const TemplatesDialog = lazy(() => import("./dialogs/TemplatesDialog").then((module) => ({ default: module.TemplatesDialog })));
 
 const SETTINGS_PATH = "/settings";
+const TRASH_VIEW_SEARCH = "?view=trash";
 const getMobileEditorReturnMemoId = (search: string) => new URLSearchParams(search).get(MOBILE_EDITOR_RETURN_PARAM);
 const emptySyncQueueSummary = (): SyncQueueSummary => ({
   total: 0,
@@ -739,8 +740,9 @@ export const WorkspaceApp = ({
   const navigate = useNavigate();
   const isInitialSettingsRoute = location.pathname === SETTINGS_PATH;
   const isInitialMobileEditorReturn = Boolean(getMobileEditorReturnMemoId(location.search));
+  const isTrashRoute = location.pathname === "/" && location.search === TRASH_VIEW_SEARCH;
   const [activePane, setActivePane] = useState<Pane>(() => (isInitialSettingsRoute && !isInitialMobileEditorReturn ? "editor" : "memos"));
-  const [memoView, setMemoView] = useState<MemoView>("notebook");
+  const [memoView, setMemoView] = useState<MemoView>(() => (isTrashRoute ? "trash" : "notebook"));
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [createdMemoEditId, setCreatedMemoEditId] = useState<string | null>(null);
@@ -790,8 +792,14 @@ export const WorkspaceApp = ({
   const [desktopActionsOpen, setDesktopActionsOpen] = useState(false);
 
   const navigateWorkspaceHome = () => {
-    if (location.pathname !== "/") {
+    if (location.pathname !== "/" || location.search) {
       navigate("/");
+    }
+  };
+
+  const navigateWorkspaceTrash = () => {
+    if (location.pathname !== "/" || location.search !== TRASH_VIEW_SEARCH) {
+      navigate(`/${TRASH_VIEW_SEARCH}`);
     }
   };
 
@@ -1016,9 +1024,10 @@ export const WorkspaceApp = ({
       return;
     }
 
+    setMemoView(isTrashRoute ? "trash" : "notebook");
     setRightView("editor");
     setMobileBottomNavActive("home");
-  }, [location.pathname]);
+  }, [isTrashRoute, location.pathname]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -2346,16 +2355,7 @@ export const WorkspaceApp = ({
                   onDeleteNotebook={handleDeleteNotebook}
                   onMoveNotebook={handleMoveNotebook}
                   onMoveMemos={handleMoveDraggedMemos}
-                  onBackToList={() => {
-                    navigateWorkspaceHome();
-                    if (memoView === "trash") {
-                      setMemoView("notebook");
-                    }
-                    setSelectedNotebookId(null);
-                    clearMemoSelection();
-                    setRightView("editor");
-                    setActivePane("memos");
-                  }}
+                  onBackToList={handleSelectAllMemos}
                   onLogout={onLogout}
                   isLoggingOut={isLoggingOut}
                   imageCompressionEnabled={imageCompressionEnabled}
@@ -2368,7 +2368,7 @@ export const WorkspaceApp = ({
                   onOpenTags={handleOpenTags}
                   onOpenSettings={handleOpenSettings}
                   onOpenTrash={() => {
-                    navigateWorkspaceHome();
+                    navigateWorkspaceTrash();
                     setMemoView("trash");
                     setSelectedNotebookId(null);
                     setMobileBottomNavActive("home");
@@ -2434,7 +2434,7 @@ export const WorkspaceApp = ({
               isSyncingMemos={isManualMemoSyncing || isSyncingQueuedChanges || isPullRefreshing || memosQuery.isRefetching}
               canSyncMemos={isOnline}
               onOpenTrash={() => {
-                navigateWorkspaceHome();
+                navigateWorkspaceTrash();
                 setMemoView("trash");
                 setSelectedNotebookId(null);
                 setMobileBottomNavActive("home");
