@@ -39,8 +39,10 @@ interface SettingsPaneProps {
   onShowGuide?: () => void;
 }
 
+// Slate and brand color variables already switch values with the root theme.
+// Keep this pane on the base utilities so dark variants do not invert them twice.
 const SettingsGroup = ({ children }: { children: ReactNode }) => (
-  <div className="min-w-0 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950 [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent [&>*]:dark:bg-transparent">
+  <div className="min-w-0 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
     {children}
   </div>
 );
@@ -79,10 +81,10 @@ export const SettingsPane = ({
       key: "general",
       label: t("settings.tabs.general"),
       icon: SlidersHorizontal,
-      colorClass: "text-emerald-700 dark:text-emerald-400",
-      bgColorClass: "bg-emerald-50/80 dark:bg-emerald-950/40",
-      hoverColorClass: "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20",
-      iconColorClass: "text-emerald-600 dark:text-emerald-400",
+      colorClass: "text-emerald-700",
+      bgColorClass: "bg-emerald-50/80",
+      hoverColorClass: "hover:bg-emerald-50/40",
+      iconColorClass: "text-emerald-600",
     },
     ...(isOwner
       ? [
@@ -90,10 +92,10 @@ export const SettingsPane = ({
             key: "users" as const,
             label: t("users.title"),
             icon: Users,
-            colorClass: "text-emerald-700 dark:text-emerald-400",
-            bgColorClass: "bg-emerald-50/80 dark:bg-emerald-950/40",
-            hoverColorClass: "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20",
-            iconColorClass: "text-emerald-600 dark:text-emerald-400",
+            colorClass: "text-emerald-700",
+            bgColorClass: "bg-emerald-50/80",
+            hoverColorClass: "hover:bg-emerald-50/40",
+            iconColorClass: "text-emerald-600",
           },
         ]
       : []),
@@ -101,28 +103,28 @@ export const SettingsPane = ({
       key: "data",
       label: t("settings.tabs.data"),
       icon: Database,
-      colorClass: "text-emerald-700 dark:text-emerald-400",
-      bgColorClass: "bg-emerald-50/80 dark:bg-emerald-950/40",
-      hoverColorClass: "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20",
-      iconColorClass: "text-emerald-600 dark:text-emerald-400",
+      colorClass: "text-emerald-700",
+      bgColorClass: "bg-emerald-50/80",
+      hoverColorClass: "hover:bg-emerald-50/40",
+      iconColorClass: "text-emerald-600",
     },
     {
       key: "ai",
       label: t("settings.tabs.ai"),
       icon: Sparkles,
-      colorClass: "text-emerald-700 dark:text-emerald-400",
-      bgColorClass: "bg-emerald-50/80 dark:bg-emerald-950/40",
-      hoverColorClass: "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20",
-      iconColorClass: "text-emerald-600 dark:text-emerald-400",
+      colorClass: "text-emerald-700",
+      bgColorClass: "bg-emerald-50/80",
+      hoverColorClass: "hover:bg-emerald-50/40",
+      iconColorClass: "text-emerald-600",
     },
     {
       key: "account",
       label: t("settings.tabs.account"),
       icon: Shield,
-      colorClass: "text-emerald-700 dark:text-emerald-400",
-      bgColorClass: "bg-emerald-50/80 dark:bg-emerald-950/40",
-      hoverColorClass: "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20",
-      iconColorClass: "text-emerald-600 dark:text-emerald-400",
+      colorClass: "text-emerald-700",
+      bgColorClass: "bg-emerald-50/80",
+      hoverColorClass: "hover:bg-emerald-50/40",
+      iconColorClass: "text-emerald-600",
     },
   ];
 
@@ -153,9 +155,9 @@ export const SettingsPane = ({
   const HeaderIconColorClass = (() => {
     if (activeMobileTab !== null) {
       const activeItem = tabItems.find((item) => item.key === activeMobileTab);
-      return activeItem ? activeItem.iconColorClass : "text-emerald-700 dark:text-emerald-400";
+      return activeItem ? activeItem.iconColorClass : "text-emerald-700";
     }
-    return "text-emerald-700 dark:text-emerald-400";
+    return "text-emerald-700";
   })();
 
   const renderTabContent = (key: TabKey) => {
@@ -205,8 +207,8 @@ export const SettingsPane = ({
   };
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-slate-50 dark:bg-slate-900/40">
-      <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-end justify-between border-b border-slate-200 bg-white px-4 pb-3 pt-[env(safe-area-inset-top)] dark:border-slate-800 dark:bg-slate-950 lg:h-16 lg:items-center lg:px-6 lg:pb-0 lg:pt-0">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden bg-slate-50">
+      <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-end justify-between border-b border-slate-200 bg-white px-4 pb-3 pt-[env(safe-area-inset-top)] lg:h-16 lg:items-center lg:px-6 lg:pb-0 lg:pt-0">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             size="icon"
@@ -214,21 +216,21 @@ export const SettingsPane = ({
             title={t("common.back")}
             aria-label={t("common.back")}
             onClick={handleBack}
-            className="h-9 w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
+            className="h-9 w-9 rounded-lg hover:bg-slate-100"
           >
             <ChevronLeft className="h-5 w-5 text-slate-500" />
           </Button>
           <div className="min-w-0">
             <h1 className={`flex items-center gap-2 ${WORKSPACE_PAGE_TITLE_CLASSNAME}`}>
               <HeaderIcon className={cn("h-4 w-4 shrink-0 transition-colors", HeaderIconColorClass)} />
-              <span className="truncate text-slate-900 dark:text-slate-100">{getHeaderTitle()}</span>
+              <span className="truncate text-slate-900">{getHeaderTitle()}</span>
             </h1>
           </div>
         </div>
         <ThemeToggle className="inline-flex" showLabel />
       </header>
 
-      <div className="flex flex-1 min-h-0 min-w-0 bg-slate-50/50 dark:bg-slate-900/20">
+      <div className="flex flex-1 min-h-0 min-w-0 bg-slate-50/50">
         {/* 桌面端布局：双栏 */}
         <div className="hidden lg:flex flex-1 min-h-0 min-w-0 mx-auto max-w-5xl px-6 py-6 gap-6">
           {/* 左侧垂直 Tab 栏 */}
@@ -245,10 +247,10 @@ export const SettingsPane = ({
                     "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 text-left w-full",
                     isSelected
                       ? `${item.colorClass} ${item.bgColorClass}`
-                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
+                      : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isSelected ? item.colorClass : "text-slate-400 dark:text-slate-500")} />
+                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isSelected ? item.colorClass : "text-slate-400")} />
                   {item.label}
                 </button>
               );
@@ -268,7 +270,7 @@ export const SettingsPane = ({
           {activeMobileTab === null ? (
             /* 分类主菜单 */
             <div className="grid gap-2">
-              <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-950">
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 {tabItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -276,15 +278,15 @@ export const SettingsPane = ({
                       key={item.key}
                       type="button"
                       onClick={() => setActiveMobileTab(item.key)}
-                      className="flex items-center justify-between gap-4 p-4 text-left hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors w-full"
+                      className="flex w-full items-center justify-between gap-4 p-4 text-left transition-colors hover:bg-slate-50/50"
                     >
                       <div className="flex items-center gap-3">
                         <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", item.bgColorClass)}>
                           <Icon className={cn("h-4 w-4", item.iconColorClass)} />
                         </div>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.label}</span>
+                        <span className="text-sm font-semibold text-slate-800">{item.label}</span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-600" />
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
                     </button>
                   );
                 })}
